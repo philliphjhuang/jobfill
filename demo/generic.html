@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Demo · Custom careers page</title>
+    <link rel="stylesheet" href="demo.css" />
+  </head>
+  <body>
+    <header class="demo-header">
+      <a href="index.html">← All demo forms</a>
+      <nav><a href="#">Jobs</a> · <a href="#">About</a></nav>
+    </header>
+    <main>
+      <h1>Globex — Backend Engineer</h1>
+      <p class="lede">
+        A hand-rolled careers form with unusual markup: labels in plain divs, placeholder-only
+        inputs, a shadow-DOM field and free-text questions (test fixture — does not submit).
+      </p>
+      <form id="apply" onsubmit="return false;">
+        <h2>Personal details</h2>
+        <div class="row">
+          <div class="lbl">Given name</div>
+          <div><input name="fname" /></div>
+        </div>
+        <div class="row">
+          <div class="lbl">Family name</div>
+          <div><input name="lname" /></div>
+        </div>
+        <div class="row"><input name="contact_email" placeholder="Email address *" /></div>
+        <div class="row"><span>Mobile number</span><input type="tel" name="mobile" /></div>
+        <div class="row">
+          <label>Where are you currently based? <input name="loc" /></label>
+        </div>
+        <div class="row"><label for="street">Street address</label><input id="street" /></div>
+        <div class="row"><label for="city">City</label><input id="city" /></div>
+        <div class="row">
+          <label for="state">State</label>
+          <select id="state">
+            <option value="">Choose a state</option>
+            <option value="CA">California</option>
+            <option value="NY">New York</option>
+            <option value="TX">Texas</option>
+            <option value="WA">Washington</option>
+          </select>
+        </div>
+        <div class="row"><label for="zip">ZIP</label><input id="zip" /></div>
+        <pronoun-field label="Your pronouns"></pronoun-field>
+
+        <h2>Online presence</h2>
+        <div class="row"><input name="linkedin_url" aria-label="LinkedIn URL" /></div>
+        <div class="row"><input name="github" placeholder="https://github.com/username" /></div>
+        <div class="row"><input name="site" placeholder="Personal website" /></div>
+
+        <h2>Background</h2>
+        <div class="row">
+          <label for="yoe">Years of experience</label>
+          <select id="yoe">
+            <option value="">Choose…</option>
+            <option>Less than 1 year</option>
+            <option>1-2 years</option>
+            <option>3-5 years</option>
+            <option>6-10 years</option>
+            <option>More than 10 years</option>
+          </select>
+        </div>
+        <div class="row">
+          <label for="salary">Desired salary (USD)</label><input id="salary" type="number" />
+        </div>
+        <div class="row">
+          <label for="start">Earliest start date</label><input id="start" type="date" />
+        </div>
+        <div class="row"><label for="school">University</label><input id="school" /></div>
+        <div class="row">
+          <label for="grad">Expected graduation date</label><input id="grad" type="month" />
+        </div>
+        <fieldset>
+          <legend>Are you willing to relocate?</legend>
+          <label><input type="radio" name="relocate" value="yes" /> Yes</label>
+          <label><input type="radio" name="relocate" value="no" /> No</label>
+        </fieldset>
+        <fieldset>
+          <legend>Preferred work arrangement</legend>
+          <label><input type="checkbox" name="arrangement" value="remote" /> Remote</label>
+          <label><input type="checkbox" name="arrangement" value="hybrid" /> Hybrid</label>
+          <label><input type="checkbox" name="arrangement" value="onsite" /> On-site</label>
+        </fieldset>
+        <div class="q">
+          <p>Do you require visa sponsorship now or in the future? *</p>
+          <div class="inline-options">
+            <label><input type="radio" name="visa" value="1" />Yes</label>
+            <label><input type="radio" name="visa" value="0" />No</label>
+          </div>
+        </div>
+        <div class="q">
+          <p>Have you previously worked for Globex?</p>
+          <div class="inline-options">
+            <label><input type="radio" name="prev" value="y" />Yes</label>
+            <label><input type="radio" name="prev" value="n" />No</label>
+          </div>
+        </div>
+        <div class="row">
+          <label for="why">Why do you want to join Globex? *</label>
+          <textarea id="why" rows="4" required></textarea>
+        </div>
+
+        <h2>Diversity (optional)</h2>
+        <div class="q">
+          <p>What is your gender?</p>
+          <div class="inline-options">
+            <label><input type="radio" name="gender" value="m" />Man</label>
+            <label><input type="radio" name="gender" value="w" />Woman</label>
+            <label><input type="radio" name="gender" value="nb" />Non-binary</label>
+            <label><input type="radio" name="gender" value="x" />Prefer not to say</label>
+          </div>
+        </div>
+        <div class="q">
+          <p>Race/ethnicity (select all that apply)</p>
+          <div class="inline-options">
+            <label><input type="checkbox" name="race" value="asian" />Asian</label>
+            <label><input type="checkbox" name="race" value="black" />Black</label>
+            <label><input type="checkbox" name="race" value="hispanic" />Hispanic/Latinx</label>
+            <label><input type="checkbox" name="race" value="mena" />Middle Eastern</label>
+            <label><input type="checkbox" name="race" value="white" />White</label>
+            <label><input type="checkbox" name="race" value="x" />Prefer not to say</label>
+          </div>
+        </div>
+        <div class="row">
+          <label for="vet">Are you a veteran?</label>
+          <select id="vet">
+            <option value="">Select</option>
+            <option>Yes</option>
+            <option>No</option>
+            <option>Prefer not to say</option>
+          </select>
+        </div>
+        <div class="row">
+          <label for="dis">Do you have a disability?</label>
+          <select id="dis">
+            <option value="">Select</option>
+            <option>Yes</option>
+            <option>No</option>
+            <option>Prefer not to answer</option>
+          </select>
+        </div>
+        <label
+          ><input type="checkbox" name="consent" required /> I consent to Globex storing my
+          application data *</label
+        >
+        <button type="submit">Apply</button>
+      </form>
+    </main>
+    <footer>
+      <form>
+        <input type="email" name="newsletter" placeholder="Subscribe to our newsletter" />
+      </form>
+    </footer>
+    <script type="module">
+      import { installAll } from './widgets.js';
+      installAll(document);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,138 @@
+# JobFill — job application autofill for Chrome
+
+[![CI](https://github.com/OWNER/jobfill/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/jobfill/actions/workflows/ci.yml)
+![Manifest V3](https://img.shields.io/badge/Chrome-Manifest%20V3-4f46e5)
+![License: MIT](https://img.shields.io/badge/license-MIT-green)
+
+JobFill is a privacy-first Chrome extension that fills out job applications for you. Save your
+details once — name, contact info, links, resume, work history, education, eligibility answers,
+preferred locations and voluntary self-identification answers — then open any application and
+click **Auto-Fill**. When it finishes, JobFill re-checks every field on the page and points out
+anything that is still empty.
+
+Everything is stored locally in your browser. There is no account, no server and no tracking.
+
+| Auto-Fill + verification panel                                                | Profile editor                                             |
+| ----------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| ![Results panel on a filled application](docs/images/autofill-panel.png)      | ![Profile editor](docs/images/profile-editor.png)          |
+| Filled fields are outlined in green; what's still empty is listed and linked. | One page for everything JobFill can answer, saved locally. |
+
+_Screenshots are captured by the end-to-end test running against the bundled demo forms._
+
+## Features
+
+- **One-click fill** from a floating button on application pages, the toolbar popup, or
+  <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd>.
+- **Resume upload first.** Workday, Lever, Greenhouse and Ashby parse your resume and pre-fill
+  fields; JobFill uploads it, waits for the page to settle, then fills only what is still empty.
+- **Work experience and education**: fills every entry (most recent first) and clicks
+  "Add another" when the form has fewer slots than your profile. Handles split month/year dates,
+  "I currently work here" and every common date format.
+- **Eligibility and preference questions**: work authorization, sponsorship (including inverse
+  "…without sponsorship?" wording), 18+, relocation, remote/hybrid/on-site, preferred locations,
+  years of experience ranges ("3-5 years"), salary, start date, notice period, how you heard.
+- **Voluntary self-identification** (gender, race/ethnicity, Hispanic/Latino, veteran, disability,
+  and more), mapped onto each site's wording — "Decline to self-identify", "I don't wish to
+  answer" and "Prefer not to say" are all understood. Can be turned off.
+- **Custom answers** for anything else: "previously worked for" → "No".
+- **Verification pass**: after filling, every field is re-read from the page. Empty required fields
+  are outlined in red, optional ones in amber, and listed in a panel — click one to jump to it.
+- **Adaptive**: understands `<label>`s, ARIA labels, placeholders, nearby text, section headings,
+  `name`/`id`/`data-automation-id` attributes, `autocomplete` hints, shadow DOM, iframes, React
+  controlled inputs, React-Select style comboboxes, Workday button dropdowns, radio/checkbox groups
+  and native selects.
+- **Never overwrites** what you already typed (unless you ask it to), never submits the form, and
+  never checks consent/terms boxes for you.
+- **Application log** of the pages you auto-filled (stored locally, can be disabled).
+
+Tuned for Greenhouse, Lever, Workday, Ashby, SmartRecruiters, iCIMS, Jobvite, BambooHR,
+Workable, Taleo, SuccessFactors and more, with generic heuristics for any other careers page.
+
+## Install
+
+### From source (developer mode)
+
+```bash
+npm ci
+npm run build
+```
+
+1. Open `chrome://extensions` and enable **Developer mode**.
+2. Click **Load unpacked** and select the `dist/` folder.
+3. The profile editor opens automatically — fill it in and upload your resume.
+
+### From a release
+
+Download `jobfill-vX.Y.Z.zip` from the Releases page, unzip it and load the folder as above (or
+install from the Chrome Web Store once published).
+
+## Usage
+
+1. Open a job application. On recognized pages a purple **Auto-Fill** button appears in the
+   bottom-right corner.
+2. Click it. JobFill uploads your resume, fills the form and shows a summary.
+3. Review the highlighted fields — red means required and still empty (usually essay questions or
+   consent boxes). Click an item in the panel to jump to it.
+4. Multi-step forms (e.g. Workday): click **Auto-Fill** again on each step.
+5. Review everything and submit the application yourself.
+
+Try it safely on the bundled mock forms: `npm run demo`, then open <http://localhost:5173>.
+
+## Development
+
+| Command             | What it does                                                  |
+| ------------------- | ------------------------------------------------------------- |
+| `npm run dev`       | Rebuild `dist/` on every change (reload the extension after). |
+| `npm run build`     | Production build into `dist/`.                                |
+| `npm test`          | Unit + integration tests (Vitest + jsdom).                    |
+| `npm run coverage`  | Tests with a coverage report and thresholds.                  |
+| `npm run test:e2e`  | Loads `dist/` into real Chrome and fills every demo form.     |
+| `npm run lint`      | ESLint (TypeScript, security rules).                          |
+| `npm run typecheck` | `tsc --noEmit` in strict mode.                                |
+| `npm run format`    | Prettier.                                                     |
+| `npm run check`     | Everything CI runs: typecheck, lint, format, tests, build.    |
+| `npm run package`   | Build and zip `release/jobfill-vX.Y.Z.zip` for the Web Store. |
+| `npm run demo`      | Serve the mock application forms on port 5173.                |
+
+Requires Node.js 20+. `test:e2e` needs Chrome installed (set `CHROME_PATH` if it is not in the
+default location).
+
+### Project layout
+
+```
+src/
+  engine/       Form understanding + filling (pure DOM, no chrome.* APIs)
+    scanner.ts    find controls, labels, groups, sections
+    classifier.ts rules.ts   decide what each field asks for
+    resolver.ts   turn profile data into the value to enter
+    fillers.ts    write values (text, select, radio, checkbox, combobox, file)
+    engine.ts     orchestrate a run + verification pass
+  content/      Content script: floating button, results panel, messaging
+  background/   Service worker: runs the engine in every frame, merges reports
+  popup/        Toolbar popup
+  options/      Profile editor (schema-driven)
+  shared/       Types, storage, report model
+demo/           Mock ATS-style forms (manual QA + integration test fixtures)
+tests/          unit/, integration/, e2e/
+docs/           Requirements, architecture, ADRs, test plan, release process
+```
+
+## Documentation
+
+- [Software requirements](docs/REQUIREMENTS.md)
+- [Architecture & design](docs/ARCHITECTURE.md) and [decision records](docs/adr/)
+- [Test plan](docs/TEST_PLAN.md)
+- [Release process](docs/RELEASE.md)
+- [How this project maps to the SDLC](docs/SDLC.md)
+- [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Privacy](PRIVACY.md) ·
+  [Changelog](CHANGELOG.md)
+
+## Privacy in one paragraph
+
+Your profile, documents and settings live in `chrome.storage.local` on your computer. JobFill makes
+no network requests of its own, has no analytics and no remote code. It reads pages only to find
+form fields and only writes to them when you click Auto-Fill. See [PRIVACY.md](PRIVACY.md).
+
+## License
+
+[MIT](LICENSE) © 2026 Phillip Huang

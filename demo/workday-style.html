@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Demo · Workday-style application</title>
+    <link rel="stylesheet" href="demo.css" />
+  </head>
+  <body>
+    <header class="demo-header"><a href="index.html">← All demo forms</a></header>
+    <main data-automation-id="applyFlowPage">
+      <h1>Data Analyst</h1>
+      <p class="lede">
+        Mock form modeled on Workday's application flow (all steps on one page; test fixture — does
+        not submit).
+      </p>
+
+      <h2>My Information</h2>
+      <div data-automation-id="formField-country">
+        <label for="country-btn">Country<abbr title="required">*</abbr></label>
+        <button
+          type="button"
+          id="country-btn"
+          class="demo-dropdown"
+          aria-haspopup="listbox"
+          data-automation-id="countryDropdown"
+          data-options="Canada|India|United Kingdom|United States of America"
+          aria-required="true"
+        >
+          Select One
+        </button>
+        <input type="hidden" name="country" />
+      </div>
+      <h3>Legal Name</h3>
+      <div class="field">
+        <label for="input-2">First Name<abbr title="required">*</abbr></label>
+        <input
+          id="input-2"
+          type="text"
+          data-automation-id="legalNameSection_firstName"
+          aria-required="true"
+        />
+      </div>
+      <div class="field">
+        <label for="input-3">Last Name<abbr title="required">*</abbr></label>
+        <input
+          id="input-3"
+          type="text"
+          data-automation-id="legalNameSection_lastName"
+          aria-required="true"
+        />
+      </div>
+      <h3>Address</h3>
+      <div class="field">
+        <label for="input-4">Address Line 1<abbr title="required">*</abbr></label>
+        <input
+          id="input-4"
+          type="text"
+          data-automation-id="addressSection_addressLine1"
+          aria-required="true"
+        />
+      </div>
+      <div class="field">
+        <label for="input-5">City<abbr title="required">*</abbr></label>
+        <input
+          id="input-5"
+          type="text"
+          data-automation-id="addressSection_city"
+          aria-required="true"
+        />
+      </div>
+      <div class="field">
+        <label for="state-btn">State<abbr title="required">*</abbr></label>
+        <button
+          type="button"
+          id="state-btn"
+          class="demo-dropdown"
+          aria-haspopup="listbox"
+          data-automation-id="addressSection_countryRegion"
+          data-options="California|New York|Texas|Washington"
+          aria-required="true"
+        >
+          Select One
+        </button>
+        <input type="hidden" name="state" />
+      </div>
+      <div class="field">
+        <label for="input-6">Postal Code<abbr title="required">*</abbr></label>
+        <input
+          id="input-6"
+          type="text"
+          data-automation-id="addressSection_postalCode"
+          aria-required="true"
+        />
+      </div>
+      <h3>Phone</h3>
+      <div class="field">
+        <label for="device-btn">Phone Device Type<abbr title="required">*</abbr></label>
+        <button
+          type="button"
+          id="device-btn"
+          class="demo-dropdown"
+          aria-haspopup="listbox"
+          data-automation-id="phone-device-type"
+          data-options="Home|Mobile|Work"
+          aria-required="true"
+        >
+          Select One
+        </button>
+        <input type="hidden" name="deviceType" />
+      </div>
+      <div class="field">
+        <label for="code-btn">Country Phone Code<abbr title="required">*</abbr></label>
+        <button
+          type="button"
+          id="code-btn"
+          class="demo-dropdown"
+          aria-haspopup="listbox"
+          data-automation-id="countryPhoneCode"
+          data-options="Canada (+1)|India (+91)|United Kingdom (+44)|United States of America (+1)"
+          aria-required="true"
+        >
+          Select One
+        </button>
+        <input type="hidden" name="phoneCode" />
+      </div>
+      <div class="field">
+        <label for="input-7">Phone Number<abbr title="required">*</abbr></label>
+        <input id="input-7" type="text" data-automation-id="phone-number" aria-required="true" />
+      </div>
+      <div class="field">
+        <label for="input-8">Email Address<abbr title="required">*</abbr></label>
+        <input id="input-8" type="text" data-automation-id="email" aria-required="true" />
+      </div>
+      <div class="field">
+        <label for="source-btn">How Did You Hear About Us?<abbr title="required">*</abbr></label>
+        <button
+          type="button"
+          id="source-btn"
+          class="demo-dropdown"
+          aria-haspopup="listbox"
+          data-automation-id="sourceDropdown"
+          data-options="Company Website|Job Board|LinkedIn|Referral|Other"
+          aria-required="true"
+        >
+          Select One
+        </button>
+        <input type="hidden" name="source" />
+      </div>
+
+      <h2>My Experience</h2>
+      <div data-automation-id="workExperienceSection">
+        <h3>Work Experience</h3>
+        <div id="work-entries"></div>
+        <button
+          type="button"
+          class="demo-add"
+          data-automation-id="Add"
+          data-template="tpl-work"
+          data-target="work-entries"
+          data-another-label="Add Another"
+        >
+          Add
+        </button>
+      </div>
+      <template id="tpl-work">
+        <div class="entry" data-automation-id="workExperience-__N__">
+          <h4>Work Experience <span class="entry-number"></span></h4>
+          <div class="field">
+            <label for="jobTitle-__N__">Job Title<abbr title="required">*</abbr></label
+            ><input
+              id="jobTitle-__N__"
+              type="text"
+              data-automation-id="jobTitle"
+              aria-required="true"
+            />
+          </div>
+          <div class="field">
+            <label for="company-__N__">Company<abbr title="required">*</abbr></label
+            ><input
+              id="company-__N__"
+              type="text"
+              data-automation-id="company"
+              aria-required="true"
+            />
+          </div>
+          <div class="field">
+            <label for="location-__N__">Location</label
+            ><input id="location-__N__" type="text" data-automation-id="location" />
+          </div>
+          <div class="field">
+            <label
+              ><input type="checkbox" id="current-__N__" data-automation-id="currentlyWorkHere" /> I
+              currently work here</label
+            >
+          </div>
+          <div class="field" role="group" aria-labelledby="from-__N__-label">
+            <span id="from-__N__-label">From<abbr title="required">*</abbr></span>
+            <input
+              type="text"
+              id="from-month-__N__"
+              data-automation-id="dateSectionMonth-input"
+              aria-label="Month"
+              placeholder="MM"
+            />
+            <input
+              type="text"
+              id="from-year-__N__"
+              data-automation-id="dateSectionYear-input"
+              aria-label="Year"
+              placeholder="YYYY"
+            />
+          </div>
+          <div class="field" role="group" aria-labelledby="to-__N__-label">
+            <span id="to-__N__-label">To</span>
+            <input
+              type="text"
+              id="to-month-__N__"
+              data-automation-id="dateSectionMonth-input"
+              aria-label="Month"
+              placeholder="MM"
+            />
+            <input
+              type="text"
+              id="to-year-__N__"
+              data-automation-id="dateSectionYear-input"
+              aria-label="Year"
+              placeholder="YYYY"
+            />
+          </div>
+          <div class="field">
+            <label for="desc-__N__">Role Description</label
+            ><textarea id="desc-__N__" data-automation-id="description" rows="3"></textarea>
+          </div>
+        </div>
+      </template>
+
+      <div data-automation-id="educationSection">
+        <h3>Education</h3>
+        <div id="education-entries"></div>
+        <button
+          type="button"
+          class="demo-add"
+          data-automation-id="Add"
+          data-template="tpl-edu"
+          data-target="education-entries"
+          data-another-label="Add Another"
+        >
+          Add
+        </button>
+      </div>
+      <template id="tpl-edu">
+        <div class="entry" data-automation-id="education-__N__">
+          <h4>Education <span class="entry-number"></span></h4>
+          <div class="field">
+            <label for="school-__N__">School or University<abbr title="required">*</abbr></label
+            ><input
+              id="school-__N__"
+              type="text"
+              data-automation-id="school"
+              aria-required="true"
+            />
+          </div>
+          <div class="field">
+            <label for="degree-__N__">Degree<abbr title="required">*</abbr></label>
+            <button
+              type="button"
+              id="degree-__N__"
+              class="demo-dropdown"
+              aria-haspopup="listbox"
+              data-automation-id="degree"
+              data-options="High School Diploma|Associate's Degree|Bachelor's Degree|Master's Degree|Doctorate"
+              aria-required="true"
+            >
+              Select One
+            </button>
+            <input type="hidden" name="degree-__N__" />
+          </div>
+          <div class="field">
+            <label for="field-__N__">Field of Study</label
+            ><input id="field-__N__" type="text" data-automation-id="fieldOfStudy" />
+          </div>
+          <div class="field">
+            <label for="gpa-__N__">Overall Result (GPA)</label
+            ><input id="gpa-__N__" type="text" data-automation-id="gpa" />
+          </div>
+          <div class="field" role="group" aria-labelledby="edu-from-__N__-label">
+            <span id="edu-from-__N__-label">From</span>
+            <input
+              type="text"
+              id="edu-from-year-__N__"
+              data-automation-id="dateSectionYear-input"
+              aria-label="Year"
+              placeholder="YYYY"
+            />
+          </div>
+          <div class="field" role="group" aria-labelledby="edu-to-__N__-label">
+            <span id="edu-to-__N__-label">To (Actual or Expected)</span>
+            <input
+              type="text"
+              id="edu-to-year-__N__"
+              data-automation-id="dateSectionYear-input"
+              aria-label="Year"
+              placeholder="YYYY"
+            />
+          </div>
+        </div>
+      </template>
+
+      <h3>Resume/CV</h3>
+      <div data-automation-id="resumeSection">
+        <div>Upload a file or drag and drop here</div>
+        <input type="file" data-automation-id="file-upload-input-ref" class="visually-hidden" />
+      </div>
+      <h3>Websites</h3>
+      <div class="field">
+        <label for="linkedin">LinkedIn Profile</label
+        ><input id="linkedin" type="text" data-automation-id="linkedinQuestion" />
+      </div>
+
+      <h2>Application Questions</h2>
+      <div class="field">
+        <label for="q-auth"
+          >Are you legally authorized to work in the country in which the job is located?<abbr
+            title="required"
+            >*</abbr
+          ></label
+        >
+        <button
+          type="button"
+          id="q-auth"
+          class="demo-dropdown"
+          aria-haspopup="listbox"
+          data-options="Yes|No"
+          aria-required="true"
+        >
+          Select One
+        </button>
+        <input type="hidden" name="q-auth" />
+      </div>
+      <div class="field">
+        <label for="q-visa"
+          >Will you now, or in the future, require sponsorship for employment visa status?<abbr
+            title="required"
+            >*</abbr
+          ></label
+        >
+        <button
+          type="button"
+          id="q-visa"
+          class="demo-dropdown"
+          aria-haspopup="listbox"
+          data-options="Yes|No"
+          aria-required="true"
+        >
+          Select One
+        </button>
+        <input type="hidden" name="q-visa" />
+      </div>
+      <div class="field">
+        <label for="q-age">Are you at least 18 years of age?<abbr title="required">*</abbr></label>
+        <button
+          type="button"
+          id="q-age"
+          class="demo-dropdown"
+          aria-haspopup="listbox"
+          data-options="Yes|No"
+          aria-required="true"
+        >
+          Select One
+        </button>
+        <input type="hidden" name="q-age" />
+      </div>
+
+      <h2>Voluntary Disclosures</h2>
+      <div class="field">
+        <label for="gender-btn">Gender</label>
+        <button
+          type="button"
+          id="gender-btn"
+          class="demo-dropdown"
+          aria-haspopup="listbox"
+          data-automation-id="gender"
+          data-options="Male|Female|Not Declared"
+        >
+          Select One
+        </button>
+        <input type="hidden" name="gender" />
+      </div>
+      <div class="field">
+        <label for="eth-btn">Ethnicity</label>
+        <button
+          type="button"
+          id="eth-btn"
+          class="demo-dropdown"
+          aria-haspopup="listbox"
+          data-automation-id="ethnicityDropdown"
+          data-options="American Indian or Alaska Native (United States of America)|Asian (United States of America)|Black or African American (United States of America)|Hispanic or Latino (United States of America)|Native Hawaiian or Other Pacific Islander (United States of America)|Two or More Races (United States of America)|White (United States of America)|I do not wish to answer."
+        >
+          Select One
+        </button>
+        <input type="hidden" name="ethnicity" />
+      </div>
+      <div class="field">
+        <label for="vet-btn">Veteran Status</label>
+        <button
+          type="button"
+          id="vet-btn"
+          class="demo-dropdown"
+          aria-haspopup="listbox"
+          data-automation-id="veteranStatus"
+          data-options="I am not a veteran|I identify as one or more of the classifications of protected veteran|I am a veteran but not a protected veteran|I do not wish to self-identify"
+        >
+          Select One
+        </button>
+        <input type="hidden" name="veteran" />
+      </div>
+      <div class="field">
+        <label
+          ><input type="checkbox" id="terms" aria-required="true" /> I have read and consent to the
+          terms and conditions<abbr title="required">*</abbr></label
+        >
+      </div>
+
+      <h2>Self Identify</h2>
+      <p>Voluntary Self-Identification of Disability (Form CC-305)</p>
+      <fieldset>
+        <legend>Please check one of the boxes below:</legend>
+        <label
+          ><input type="checkbox" name="disabilityStatus" value="yes" /> Yes, I have a disability,
+          or have had one in the past</label
+        ><br />
+        <label
+          ><input type="checkbox" name="disabilityStatus" value="no" /> No, I do not have a
+          disability and have not had one in the past</label
+        ><br />
+        <label
+          ><input type="checkbox" name="disabilityStatus" value="decline" /> I do not want to
+          answer</label
+        >
+      </fieldset>
+      <button type="submit">Submit</button>
+    </main>
+    <script type="module">
+      import { installAll } from './widgets.js';
+      installAll(document);
+    </script>
+  </body>
+</html>

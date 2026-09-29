@@ -1,0 +1,7 @@
+#!/bin/sh
+# Opt in with: git config core.hooksPath .githooks
+set -e
+npm run --silent typecheck
+npm run --silent lint
+npm run --silent format:check
+npm test --silent

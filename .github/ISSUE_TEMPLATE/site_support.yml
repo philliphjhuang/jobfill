@@ -1,0 +1,44 @@
+name: Site not filling correctly
+description: A field was skipped, filled wrongly, or the Auto-Fill button did not appear.
+labels: [site-support]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks! Please **remove personal data** (your name, email, answers) from anything you paste.
+  - type: input
+    id: url
+    attributes:
+      label: Application page URL
+      description: A public job posting URL where the problem happens.
+      placeholder: https://boards.greenhouse.io/company/jobs/123
+    validations:
+      required: true
+  - type: dropdown
+    id: ats
+    attributes:
+      label: Platform (shown in the JobFill panel)
+      options:
+        [Greenhouse, Lever, Workday, Ashby, SmartRecruiters, iCIMS, Other / custom site, Not shown]
+    validations:
+      required: true
+  - type: textarea
+    id: fields
+    attributes:
+      label: Which fields were wrong?
+      description: Field label, what JobFill entered (or "empty"), and what you expected.
+      placeholder: |
+        "Are you legally authorized to work in the US?" — empty — expected "Yes"
+    validations:
+      required: true
+  - type: textarea
+    id: html
+    attributes:
+      label: HTML of the field (optional but very helpful)
+      description: Right-click the field → Inspect → right-click the surrounding element → Copy → Copy outerHTML.
+      render: html
+  - type: input
+    id: version
+    attributes:
+      label: JobFill and Chrome versions
+      placeholder: JobFill 1.0.0, Chrome 154

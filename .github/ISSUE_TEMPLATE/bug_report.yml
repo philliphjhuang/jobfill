@@ -1,0 +1,33 @@
+name: Bug report
+description: Something in JobFill itself is broken (editor, popup, panel, storage).
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: Include what you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the profile editor
+        2. …
+    validations:
+      required: true
+  - type: textarea
+    id: console
+    attributes:
+      label: Errors
+      description: From chrome://extensions → JobFill → Errors, or the page console. Remove personal data.
+      render: text
+  - type: input
+    id: version
+    attributes:
+      label: JobFill and Chrome versions
+      placeholder: JobFill 1.0.0, Chrome 154, Windows 11
+    validations:
+      required: true

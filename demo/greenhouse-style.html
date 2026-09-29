@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Demo · Greenhouse-style application</title>
+    <link rel="stylesheet" href="demo.css" />
+  </head>
+  <body>
+    <header class="demo-header">
+      <a href="index.html">← All demo forms</a>
+      <form role="search"><input type="search" placeholder="Search jobs" /></form>
+    </header>
+    <main>
+      <h1>Software Engineer, Platform</h1>
+      <p class="lede">
+        Mock form modeled on Greenhouse job boards (test fixture — does not submit).
+      </p>
+
+      <form id="application-form" action="#" onsubmit="return false;">
+        <h3>Apply for this job</h3>
+        <div class="field">
+          <label for="first_name" id="first_name-label"
+            >First Name<span class="asterisk">*</span></label
+          >
+          <input type="text" id="first_name" aria-required="true" autocomplete="given-name" />
+        </div>
+        <div class="field">
+          <label for="last_name">Last Name<span class="asterisk">*</span></label>
+          <input type="text" id="last_name" aria-required="true" />
+        </div>
+        <div class="field">
+          <label for="preferred_name">Preferred First Name</label>
+          <input type="text" id="preferred_name" />
+        </div>
+        <div class="field">
+          <label for="email">Email<span class="asterisk">*</span></label>
+          <input type="email" id="email" aria-required="true" />
+        </div>
+        <div class="field">
+          <label for="phone">Phone<span class="asterisk">*</span></label>
+          <input type="tel" id="phone" aria-required="true" />
+        </div>
+        <div
+          class="field demo-combo"
+          data-options="San Francisco, California, United States|San Jose, California, United States|New York, New York, United States|Seattle, Washington, United States|Austin, Texas, United States"
+        >
+          <label id="candidate-location-label" for="candidate-location"
+            >Location (City)<span class="asterisk">*</span></label
+          >
+          <div class="select__control">
+            <div class="select__value select__placeholder">Start typing…</div>
+            <input
+              id="candidate-location"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-expanded="false"
+              aria-labelledby="candidate-location-label"
+              aria-required="true"
+              autocomplete="off"
+            />
+          </div>
+          <input type="hidden" name="location" />
+        </div>
+
+        <fieldset id="resume_fieldset">
+          <legend>Resume/CV<span class="asterisk">*</span></legend>
+          <div class="upload">
+            <button type="button">Attach</button>
+            <input
+              type="file"
+              id="resume"
+              class="visually-hidden"
+              accept=".pdf,.doc,.docx,.txt,.rtf"
+              aria-required="true"
+            />
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Cover Letter</legend>
+          <div class="upload"><input type="file" id="cover_letter" class="visually-hidden" /></div>
+        </fieldset>
+
+        <h3>Education</h3>
+        <div id="education-entries">
+          <div class="education">
+            <div
+              class="field demo-combo"
+              data-options="University of California, Berkeley|Stanford University|Massachusetts Institute of Technology|University of Washington|Other"
+            >
+              <label id="school--0-label" for="school--0"
+                >School<span class="asterisk">*</span></label
+              >
+              <div class="select__control">
+                <div class="select__value select__placeholder">Select...</div>
+                <input
+                  id="school--0"
+                  role="combobox"
+                  aria-autocomplete="list"
+                  aria-expanded="false"
+                  aria-labelledby="school--0-label"
+                  aria-required="true"
+                  autocomplete="off"
+                />
+              </div>
+              <input type="hidden" name="school--0" />
+            </div>
+            <div class="field">
+              <label for="degree--0">Degree</label>
+              <select id="degree--0">
+                <option value="">Select...</option>
+                <option>High School</option>
+                <option>Associate's Degree</option>
+                <option>Bachelor's Degree</option>
+                <option>Master's Degree</option>
+                <option>Master of Business Administration (M.B.A.)</option>
+                <option>Doctor of Philosophy (Ph.D.)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="discipline--0">Discipline</label>
+              <select id="discipline--0">
+                <option value="">Select...</option>
+                <option>Computer Science</option>
+                <option>Electrical Engineering</option>
+                <option>Mathematics</option>
+                <option>Economics</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="start-month--0">Start date month</label>
+              <select id="start-month--0">
+                <option value="">Month</option>
+                <option>January</option>
+                <option>February</option>
+                <option>March</option>
+                <option>April</option>
+                <option>May</option>
+                <option>June</option>
+                <option>July</option>
+                <option>August</option>
+                <option>September</option>
+                <option>October</option>
+                <option>November</option>
+                <option>December</option>
+              </select>
+              <label for="start-year--0">Start date year</label>
+              <input id="start-year--0" type="text" placeholder="YYYY" />
+            </div>
+            <div class="field">
+              <label for="end-month--0">End date month</label>
+              <select id="end-month--0">
+                <option value="">Month</option>
+                <option>January</option>
+                <option>February</option>
+                <option>March</option>
+                <option>April</option>
+                <option>May</option>
+                <option>June</option>
+                <option>July</option>
+                <option>August</option>
+                <option>September</option>
+                <option>October</option>
+                <option>November</option>
+                <option>December</option>
+              </select>
+              <label for="end-year--0">End date year</label>
+              <input id="end-year--0" type="text" placeholder="YYYY" />
+            </div>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="demo-add"
+          data-template="tpl-education"
+          data-target="education-entries"
+        >
+          + Add another
+        </button>
+        <template id="tpl-education">
+          <div class="education">
+            <div
+              class="field demo-combo"
+              data-options="University of California, Berkeley|Stanford University|Massachusetts Institute of Technology|University of Washington|Other"
+            >
+              <label id="school--__N__-label" for="school--__N__">School</label>
+              <div class="select__control">
+                <div class="select__value select__placeholder">Select...</div>
+                <input
+                  id="school--__N__"
+                  role="combobox"
+                  aria-autocomplete="list"
+                  aria-expanded="false"
+                  aria-labelledby="school--__N__-label"
+                  autocomplete="off"
+                />
+              </div>
+              <input type="hidden" name="school--__N__" />
+            </div>
+            <div class="field">
+              <label for="degree--__N__">Degree</label>
+              <select id="degree--__N__">
+                <option value="">Select...</option>
+                <option>High School</option>
+                <option>Associate's Degree</option>
+                <option>Bachelor's Degree</option>
+                <option>Master's Degree</option>
+                <option>Doctor of Philosophy (Ph.D.)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="discipline--__N__">Discipline</label>
+              <select id="discipline--__N__">
+                <option value="">Select...</option>
+                <option>Computer Science</option>
+                <option>Electrical Engineering</option>
+                <option>Mathematics</option>
+                <option>Economics</option>
+              </select>
+            </div>
+          </div>
+        </template>
+
+        <h3>Additional questions</h3>
+        <div class="field">
+          <label for="question_linkedin">LinkedIn Profile</label>
+          <input type="text" id="question_linkedin" />
+        </div>
+        <div class="field">
+          <label for="question_website">Website</label>
+          <input type="text" id="question_website" />
+        </div>
+        <div class="field demo-combo" data-options="Yes|No">
+          <label id="question_auth-label" for="question_auth"
+            >Are you legally authorized to work in the United States?<span class="asterisk"
+              >*</span
+            ></label
+          >
+          <div class="select__control">
+            <div class="select__value select__placeholder">Select...</div>
+            <input
+              id="question_auth"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-expanded="false"
+              aria-labelledby="question_auth-label"
+              aria-required="true"
+              autocomplete="off"
+            />
+          </div>
+          <input type="hidden" name="question_auth" />
+        </div>
+        <div class="field">
+          <label for="question_visa"
+            >Will you now or in the future require sponsorship for employment visa status (e.g. H-1B
+            visa status)?<span class="asterisk">*</span></label
+          >
+          <select id="question_visa" aria-required="true">
+            <option value="">Select...</option>
+            <option>Yes</option>
+            <option>No</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="question_source">How did you hear about this job?</label>
+          <input type="text" id="question_source" />
+        </div>
+        <div class="field">
+          <label for="question_why"
+            >Why are you interested in joining our team?<span class="asterisk">*</span></label
+          >
+          <textarea id="question_why" rows="4" aria-required="true"></textarea>
+        </div>
+
+        <h3>U.S. Equal Employment Opportunity</h3>
+        <p>
+          Our company values diversity. To ensure that we comply with reporting requirements, we
+          invite applicants to voluntarily self-identify. Submission is voluntary and declining will
+          not subject you to any adverse treatment.
+        </p>
+        <div class="field">
+          <label for="gender">Gender</label>
+          <select id="gender">
+            <option value="">Please select</option>
+            <option>Male</option>
+            <option>Female</option>
+            <option>Decline To Self Identify</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="hispanic_ethnicity">Are you Hispanic/Latino?</label>
+          <select id="hispanic_ethnicity">
+            <option value="">Please select</option>
+            <option>Yes</option>
+            <option>No</option>
+            <option>Decline To Self Identify</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="race">Please identify your race</label>
+          <select id="race">
+            <option value="">Please select</option>
+            <option>American Indian or Alaskan Native</option>
+            <option>Asian</option>
+            <option>Black or African American</option>
+            <option>Hispanic or Latino</option>
+            <option>White</option>
+            <option>Native Hawaiian or Other Pacific Islander</option>
+            <option>Two or More Races</option>
+            <option>Decline To Self Identify</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="veteran_status">Veteran Status</label>
+          <select id="veteran_status">
+            <option value="">Please select</option>
+            <option>I am not a protected veteran</option>
+            <option>I identify as one or more of the classifications of protected veteran</option>
+            <option>I don't wish to answer</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="disability_status">Disability Status</label>
+          <select id="disability_status">
+            <option value="">Please select</option>
+            <option>Yes, I have a disability, or have had one in the past</option>
+            <option>No, I do not have a disability and have not had one in the past</option>
+            <option>I do not want to answer</option>
+          </select>
+        </div>
+        <button type="submit">Submit Application</button>
+      </form>
+    </main>
+    <footer>
+      <form class="newsletter">
+        <label>Get new jobs by email <input type="email" name="newsletter" /></label>
+      </form>
+    </footer>
+    <script type="module">
+      import { installAll } from './widgets.js';
+      installAll(document);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Demo · Lever-style application</title>
+    <link rel="stylesheet" href="demo.css" />
+  </head>
+  <body>
+    <header class="demo-header"><a href="index.html">← All demo forms</a></header>
+    <main>
+      <h1>Product Designer</h1>
+      <p class="lede">Mock form modeled on Lever job postings (test fixture — does not submit).</p>
+      <form id="application-form" class="application-form" onsubmit="return false;">
+        <div class="section">
+          <h4>Submit your application</h4>
+          <ul class="plain">
+            <li class="application-question resume">
+              <label>
+                <div class="application-label">Resume/CV<span class="required">✱</span></div>
+                <div class="application-field">
+                  <a class="application-file-input"
+                    ><input
+                      type="file"
+                      name="resume"
+                      id="resume-upload-input"
+                      class="visually-hidden"
+                  /></a>
+                </div>
+              </label>
+            </li>
+            <li class="application-question">
+              <label>
+                <div class="application-label">Full name<span class="required">✱</span></div>
+                <div class="application-field"><input type="text" name="name" required /></div>
+              </label>
+            </li>
+            <li class="application-question">
+              <label>
+                <div class="application-label">Email<span class="required">✱</span></div>
+                <div class="application-field"><input type="email" name="email" required /></div>
+              </label>
+            </li>
+            <li class="application-question">
+              <label>
+                <div class="application-label">Phone</div>
+                <div class="application-field"><input type="text" name="phone" /></div>
+              </label>
+            </li>
+            <li class="application-question">
+              <label>
+                <div class="application-label">Current location</div>
+                <div class="application-field"><input type="text" name="location" /></div>
+              </label>
+            </li>
+            <li class="application-question">
+              <label>
+                <div class="application-label">Current company</div>
+                <div class="application-field"><input type="text" name="org" /></div>
+              </label>
+            </li>
+          </ul>
+        </div>
+        <div class="section">
+          <h4>Links</h4>
+          <ul class="plain">
+            <li class="application-question">
+              <label
+                ><div class="application-label">LinkedIn URL</div>
+                <div class="application-field"><input type="text" name="urls[LinkedIn]" /></div
+              ></label>
+            </li>
+            <li class="application-question">
+              <label
+                ><div class="application-label">Twitter URL</div>
+                <div class="application-field"><input type="text" name="urls[Twitter]" /></div
+              ></label>
+            </li>
+            <li class="application-question">
+              <label
+                ><div class="application-label">GitHub URL</div>
+                <div class="application-field"><input type="text" name="urls[GitHub]" /></div
+              ></label>
+            </li>
+            <li class="application-question">
+              <label
+                ><div class="application-label">Portfolio URL</div>
+                <div class="application-field"><input type="text" name="urls[Portfolio]" /></div
+              ></label>
+            </li>
+            <li class="application-question">
+              <label
+                ><div class="application-label">Other website</div>
+                <div class="application-field"><input type="text" name="urls[Other]" /></div
+              ></label>
+            </li>
+          </ul>
+        </div>
+        <div class="section">
+          <h4>Questions</h4>
+          <ul class="plain">
+            <li class="application-question">
+              <div class="application-label">
+                Are you currently authorized to work in the United States?<span class="required"
+                  >✱</span
+                >
+              </div>
+              <ul class="plain" data-qa="multiple-choice">
+                <li>
+                  <label
+                    ><input type="radio" name="cards[q1][field0]" value="Yes" required /><span
+                      class="application-answer-alternative"
+                      >Yes</span
+                    ></label
+                  >
+                </li>
+                <li>
+                  <label
+                    ><input type="radio" name="cards[q1][field0]" value="No" /><span
+                      class="application-answer-alternative"
+                      >No</span
+                    ></label
+                  >
+                </li>
+              </ul>
+            </li>
+            <li class="application-question">
+              <div class="application-label">
+                Which of our offices would you prefer to work from?
+              </div>
+              <ul class="plain" data-qa="checkboxes">
+                <li>
+                  <label
+                    ><input type="checkbox" name="cards[q2][field0]" value="San Francisco" /><span
+                      >San Francisco</span
+                    ></label
+                  >
+                </li>
+                <li>
+                  <label
+                    ><input type="checkbox" name="cards[q2][field0]" value="New York" /><span
+                      >New York</span
+                    ></label
+                  >
+                </li>
+                <li>
+                  <label
+                    ><input type="checkbox" name="cards[q2][field0]" value="London" /><span
+                      >London</span
+                    ></label
+                  >
+                </li>
+                <li>
+                  <label
+                    ><input type="checkbox" name="cards[q2][field0]" value="Remote (US)" /><span
+                      >Remote (US)</span
+                    ></label
+                  >
+                </li>
+              </ul>
+            </li>
+            <li class="application-question">
+              <label>
+                <div class="application-label">
+                  How many years of professional experience do you have?<span class="required"
+                    >✱</span
+                  >
+                </div>
+                <div class="application-field">
+                  <select name="cards[q3][field0]" required>
+                    <option value="">Select...</option>
+                    <option>0-1</option>
+                    <option>1-3</option>
+                    <option>3-5</option>
+                    <option>5-10</option>
+                    <option>10+</option>
+                  </select>
+                </div>
+              </label>
+            </li>
+            <li class="application-question">
+              <div class="application-label">Have you ever worked for Acme Corp before?</div>
+              <ul class="plain" data-qa="multiple-choice">
+                <li>
+                  <label
+                    ><input type="radio" name="cards[q4][field0]" value="Yes" /><span
+                      >Yes</span
+                    ></label
+                  >
+                </li>
+                <li>
+                  <label
+                    ><input type="radio" name="cards[q4][field0]" value="No" /><span
+                      >No</span
+                    ></label
+                  >
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+        <div class="section">
+          <h4>Additional information</h4>
+          <textarea
+            name="comments"
+            rows="5"
+            placeholder="Add a cover letter or anything else you want to share."
+          ></textarea>
+        </div>
+        <div class="section">
+          <h4>U.S. Equal Employment Opportunity information</h4>
+          <p>Completion is voluntary and will not subject you to adverse treatment.</p>
+          <ul class="plain">
+            <li class="application-question">
+              <label
+                ><div class="application-label">Gender</div>
+                <select name="eeo[gender]">
+                  <option value="">Select ...</option>
+                  <option>Male</option>
+                  <option>Female</option>
+                  <option>Decline to self-identify</option>
+                </select></label
+              >
+            </li>
+            <li class="application-question">
+              <label
+                ><div class="application-label">Race</div>
+                <select name="eeo[race]">
+                  <option value="">Select ...</option>
+                  <option>American Indian or Alaska Native</option>
+                  <option>Asian</option>
+                  <option>Black or African American</option>
+                  <option>Hispanic or Latino</option>
+                  <option>White</option>
+                  <option>Native Hawaiian or Other Pacific Islander</option>
+                  <option>Two or More Races</option>
+                  <option>Decline to self-identify</option>
+                </select></label
+              >
+            </li>
+            <li class="application-question">
+              <label
+                ><div class="application-label">Veteran status</div>
+                <select name="eeo[veteran]">
+                  <option value="">Select ...</option>
+                  <option>I am a veteran</option>
+                  <option>I am not a veteran</option>
+                  <option>Decline to self-identify</option>
+                </select></label
+              >
+            </li>
+            <li class="application-question">
+              <label
+                ><div class="application-label">Disability status</div>
+                <select name="eeo[disability]">
+                  <option value="">Select ...</option>
+                  <option>Yes, I have a disability (or previously had a disability)</option>
+                  <option>No, I don't have a disability</option>
+                  <option>I don't wish to answer</option>
+                </select></label
+              >
+            </li>
+          </ul>
+        </div>
+        <label
+          ><input type="checkbox" name="consent" required /> I agree to the processing of my
+          personal data per the privacy notice ✱</label
+        >
+        <button type="submit">Submit application</button>
+      </form>
+    </main>
+    <script type="module">
+      import { installAll } from './widgets.js';
+      installAll(document);
+    </script>
+  </body>
+</html>
