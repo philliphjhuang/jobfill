@@ -38,3 +38,9 @@ For DOCX, the browser already provides everything needed (`DecompressionStream` 
   parse partially. The review step and the editor make that visible and fixable.
 - ❌ Scanned (image-only) PDFs have no text; OCR is out of scope.
 - 🔁 Revisit when upgrading to Node 22: move to the current pdf.js major.
+
+## Update — 2026-10-29
+
+The toolchain moved to Node 24 LTS (22.22+ supported), so the Node 20 constraint that led to
+pdf.js 4.10.38 no longer applies. Upgrading to the current pdf.js major is now possible; it should
+be done as its own change, re-running the resume-import unit and e2e tests.

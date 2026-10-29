@@ -123,7 +123,7 @@ Try it safely on the bundled mock forms: `npm run demo`, then open <http://local
 | `npm run package`   | Build and zip `release/jobfill-vX.Y.Z.zip` for the Web Store. |
 | `npm run demo`      | Serve the mock application forms on port 5173.                |
 
-Requires Node.js 20+. `test:e2e` needs Chrome installed (set `CHROME_PATH` if it is not in the
+Requires Node.js 24 (current LTS) or 22.22+ — only for developing; people using the extension need nothing but Chrome. `test:e2e` needs Chrome installed (set `CHROME_PATH` if it is not in the
 default location).
 
 ### Project layout

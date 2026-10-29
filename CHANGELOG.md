@@ -24,6 +24,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 
+- Development toolchain moved to Node.js 24 LTS (22.22+ also supported); Node 20 reached
+  end-of-life in April 2026. CI now tests Node 22 and 24. This unblocks jsdom 30, which no longer
+  runs on Node 20. (Using the extension needs only Chrome.)
 - Fill runs are event-driven: the service worker starts a run and relays messages instead of
   waiting for it, so long paced runs survive Chrome's 5-minute limit per service-worker call
   ([ADR 0005](docs/adr/0005-human-paced-typing-and-event-driven-runs.md)). The popup now starts a

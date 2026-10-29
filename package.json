@@ -7,7 +7,7 @@
   "license": "MIT",
   "author": "Phillip Huang",
   "engines": {
-    "node": ">=20"
+    "node": "^22.22.2 || >=24.15.0"
   },
   "scripts": {
     "build": "node scripts/build.mjs",
@@ -33,7 +33,7 @@
     "esbuild": "^0.28.2",
     "eslint": "^9.39.5",
     "globals": "^17.12.0",
-    "jsdom": "^26.1.0",
+    "jsdom": "^30.1.3",
     "prettier": "^3.9.9",
     "puppeteer-core": "^24.43.1",
     "typescript": "^5.9.3",
