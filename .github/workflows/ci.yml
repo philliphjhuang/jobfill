@@ -57,7 +57,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - uses: browser-actions/setup-chrome@v1
+      - uses: browser-actions/setup-chrome@v2
         id: chrome
         with:
           chrome-version: stable
