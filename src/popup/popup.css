@@ -154,3 +154,9 @@ kbd {
   padding: 0 4px;
   font-size: 10px;
 }
+.setup {
+  width: 100%;
+  margin-top: 10px;
+  border-color: #c7d2fe;
+  color: var(--accent);
+}

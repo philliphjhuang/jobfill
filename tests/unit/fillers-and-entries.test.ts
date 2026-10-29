@@ -5,10 +5,16 @@ import { findAddButton } from '../../src/engine/entries';
 import { fillField, setInputFiles, withSubmitGuard } from '../../src/engine/fillers';
 import { clearHighlights, highlight } from '../../src/engine/highlight';
 import { scanFields } from '../../src/engine/scanner';
+import { Pacer } from '../../src/engine/pacing';
 import { readValue } from '../../src/engine/values';
+import { DEFAULT_PACING } from '../../src/shared/defaults';
 import { mount } from '../helpers/fixtures';
 
-const OPTS = { overwrite: false, comboboxTimeoutMs: 50 };
+const OPTS = {
+  overwrite: false,
+  comboboxTimeoutMs: 50,
+  pacer: new Pacer({ ...DEFAULT_PACING, enabled: false }),
+};
 
 function firstField(html: string) {
   mount(`<form>${html}</form>`);

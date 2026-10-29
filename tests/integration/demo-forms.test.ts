@@ -21,7 +21,7 @@ async function fill(
   overrides: Parameters<typeof sampleData>[0] = {},
 ): Promise<FrameReport> {
   loadDemo(page);
-  return new FillEngine(document, sampleData(overrides), FAST_TIMING).fill();
+  return new FillEngine(document, sampleData(overrides), { timing: FAST_TIMING }).fill();
 }
 
 const missingLabels = (r: FrameReport, required = true) =>
@@ -89,18 +89,16 @@ describe('Greenhouse-style form', () => {
   it('never overwrites values the user already entered', async () => {
     loadDemo('greenhouse-style.html');
     byId('email').value = 'custom@example.org';
-    await new FillEngine(document, sampleData(), FAST_TIMING).fill();
+    await new FillEngine(document, sampleData(), { timing: FAST_TIMING }).fill();
     expect(byId('email').value).toBe('custom@example.org');
   });
 
   it('overwrites when the setting is on', async () => {
     loadDemo('greenhouse-style.html');
     byId('email').value = 'custom@example.org';
-    await new FillEngine(
-      document,
-      sampleData({ settings: { overwriteExisting: true } }),
-      FAST_TIMING,
-    ).fill();
+    await new FillEngine(document, sampleData({ settings: { overwriteExisting: true } }), {
+      timing: FAST_TIMING,
+    }).fill();
     expect(byId('email').value).toBe('ada@example.com');
   });
 
@@ -258,7 +256,7 @@ describe('Custom careers page', () => {
 describe('verification', () => {
   it('flags empty fields and highlights them on the page', async () => {
     loadDemo('lever-style.html');
-    const engine = new FillEngine(document, sampleData(), FAST_TIMING);
+    const engine = new FillEngine(document, sampleData(), { timing: FAST_TIMING });
     const report = await engine.verify();
     const required = missingLabels(report);
     expect(required).toEqual(expect.arrayContaining(['Resume/CV', 'Full name', 'Email']));
@@ -270,14 +268,14 @@ describe('verification', () => {
 
   it('reports nothing on a page without an application form', async () => {
     document.body.innerHTML = '<form role="search"><input type="search"></form><p>Hello</p>';
-    const report = await new FillEngine(document, sampleData(), FAST_TIMING).fill();
+    const report = await new FillEngine(document, sampleData(), { timing: FAST_TIMING }).fill();
     expect(report.fields).toHaveLength(0);
     expect(report.missing).toHaveLength(0);
   });
 
   it('clears previous highlights on the next run', async () => {
     loadDemo('lever-style.html');
-    const engine = new FillEngine(document, sampleData(), FAST_TIMING);
+    const engine = new FillEngine(document, sampleData(), { timing: FAST_TIMING });
     await engine.verify();
     await engine.fill();
     expect(document.querySelectorAll('[data-jobfill-flag="required"]').length).toBe(1);

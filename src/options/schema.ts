@@ -28,6 +28,7 @@ export type FieldDef =
   | (Base & { kind: 'textarea'; placeholder?: string; rows?: number })
   | (Base & { kind: 'select'; options: Opt[] })
   | (Base & { kind: 'checkbox' })
+  | (Base & { kind: 'number'; min: number; max: number; step: number; unit?: string })
   | (Base & { kind: 'multicheck'; options: Opt[] })
   | (Base & { kind: 'lines'; placeholder?: string });
 
@@ -46,7 +47,7 @@ export interface SectionDef {
   description?: string;
   fields?: FieldDef[];
   list?: ListDef;
-  custom?: 'documents' | 'data' | 'history';
+  custom?: 'import' | 'documents' | 'data' | 'history';
 }
 
 const YES_NO: Opt[] = [
@@ -58,6 +59,7 @@ const YES_NO: Opt[] = [
 const DECLINE_LABEL = 'I prefer not to answer';
 
 export const SECTIONS: SectionDef[] = [
+  { id: 'import', title: 'Fill from resume', custom: 'import' },
   {
     id: 'personal',
     title: 'Personal information',
@@ -580,6 +582,53 @@ export const SECTIONS: SectionDef[] = [
         path: 'settings.keepHistory',
         label: 'Keep a local log of applications I auto-fill',
         span: 6,
+      },
+      {
+        kind: 'checkbox',
+        path: 'settings.pacing.enabled',
+        label: 'Type like a person: one character at a time, with a pause before each field',
+        help: 'With the default delays a typical application takes about 5–15 minutes (a long cover letter adds more). Progress and a Stop button are shown on the page. Turn off to fill everything at once.',
+        span: 6,
+      },
+      {
+        kind: 'number',
+        path: 'settings.pacing.keyMinSec',
+        label: 'Delay between characters — shortest',
+        min: 0,
+        max: 10,
+        step: 0.1,
+        unit: 'seconds',
+        span: 3,
+      },
+      {
+        kind: 'number',
+        path: 'settings.pacing.keyMaxSec',
+        label: 'Delay between characters — longest',
+        min: 0,
+        max: 10,
+        step: 0.1,
+        unit: 'seconds',
+        span: 3,
+      },
+      {
+        kind: 'number',
+        path: 'settings.pacing.fieldMinSec',
+        label: 'Pause before the next field — shortest',
+        min: 0,
+        max: 120,
+        step: 0.5,
+        unit: 'seconds',
+        span: 3,
+      },
+      {
+        kind: 'number',
+        path: 'settings.pacing.fieldMaxSec',
+        label: 'Pause before the next field — longest',
+        min: 0,
+        max: 120,
+        step: 0.5,
+        unit: 'seconds',
+        span: 3,
       },
     ],
   },

@@ -25,6 +25,13 @@ code. When, and only when, you click Auto-Fill, JobFill enters your information 
 the page you are viewing. What that website does with an application you submit is governed by
 that website's privacy policy.
 
+## Filling your profile from a resume
+
+When you use **Fill from resume**, the file is read and parsed inside the extension on your
+computer. Its contents are not uploaded or shared; the extracted values are saved to your local
+profile only after the rules you control (empty fields filled, other fields only with your Yes or
+Edit).
+
 ## Page access
 
 JobFill's content script reads the structure of web pages to recognise job application forms and

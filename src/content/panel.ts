@@ -3,14 +3,28 @@
  * inside a shadow root so page CSS cannot break it (and vice versa).
  */
 import { UI_HOST_ID } from '../engine/dom';
-import type { TabMissingItem, TabReport } from '../shared/report';
+import type { RunProgress, TabMissingItem, TabReport } from '../shared/report';
 import { clear, h } from '../ui/h';
 
 export interface PanelCallbacks {
   onFill(): void;
   onVerify(): void;
+  onStop(): void;
   onFocus(frameId: number, ref: number): void;
   onOpenOptions(hash?: string): void;
+}
+
+const ACTION_VERB: Record<NonNullable<RunProgress['action']>, string> = {
+  type: 'Typing',
+  choose: 'Choosing',
+  upload: 'Uploading',
+  click: 'Clicking',
+};
+
+/** "about 4 min", "less than a minute". */
+export function formatRemaining(ms: number): string {
+  if (ms < 60_000) return 'less than a minute';
+  return `about ${Math.round(ms / 60_000)} min`;
 }
 
 const CSS = `
@@ -52,8 +66,13 @@ details summary { cursor: pointer; color: #4b5563; font-size: 12px; margin-top: 
 .btn { flex: 1; border: 1px solid #e5e7eb; background: #fff; border-radius: 8px; padding: 8px; cursor: pointer; font-weight: 600; font-size: 12px; color: #111827; }
 .btn.primary { background: #4f46e5; color: #fff; border-color: #4f46e5; }
 .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .8s linear infinite; }
-.running { display: flex; align-items: center; gap: 10px; padding: 18px 14px; color: #374151; }
-.running .spinner { border-color: #e5e7eb; border-top-color: #4f46e5; }
+.running { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; color: #374151; }
+.running .spinner { border-color: #e5e7eb; border-top-color: #4f46e5; flex: none; margin-top: 2px; }
+.run-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.run-title { font-weight: 600; color: #111827; }
+.run-detail { overflow: hidden; text-overflow: ellipsis; }
+.run-eta { color: #6b7280; font-size: 12px; }
+.btn.stop { color: #991b1b; border-color: #fecaca; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .all-good { text-align: center; padding: 8px 0 4px; color: #166534; font-weight: 600; }
 `;
@@ -187,19 +206,68 @@ export class Panel {
     );
   }
 
+  private run: { title: HTMLElement; detail: HTMLElement; eta: HTMLElement } | null = null;
+
   showRunning(mode: 'fill' | 'verify'): void {
-    if (this.fab) this.fab.disabled = true;
-    this.frame([
-      h(
-        'div',
-        { class: 'running' },
-        h('div', { class: 'spinner' }),
-        mode === 'fill' ? 'Filling your application…' : 'Checking every field…',
-      ),
-    ]);
+    this.mount();
+    this.fab.disabled = true;
+    const title = h(
+      'div',
+      { class: 'run-title' },
+      mode === 'fill' ? 'Filling your application…' : 'Checking every field…',
+    );
+    const detail = h('div', { class: 'run-detail' });
+    const eta = h('div', { class: 'run-eta' });
+    this.run = { title, detail, eta };
+    const stop = h(
+      'button',
+      {
+        class: 'btn stop',
+        type: 'button',
+        title: 'Finish the current field, then stop',
+        on: {
+          click: () => {
+            stop.disabled = true;
+            stop.textContent = 'Stopping…';
+            detail.textContent = 'Finishing the current field, then stopping.';
+            this.cb.onStop();
+          },
+        },
+      },
+      'Stop',
+    );
+    this.frame(
+      [
+        h(
+          'div',
+          { class: 'running' },
+          h('div', { class: 'spinner' }),
+          h('div', { class: 'run-text' }, title, detail, eta),
+        ),
+      ],
+      mode === 'fill' ? [stop] : [],
+    );
+  }
+
+  /** Update the running view of a paced fill. */
+  showProgress(p: RunProgress): void {
+    if (!this.run) return;
+    const { title, detail, eta } = this.run;
+    title.textContent = `Field ${p.step} of ${Math.max(p.total, p.step)}`;
+    if (p.phase === 'paused') {
+      detail.textContent = 'Paused while this tab is in the background. Come back to continue.';
+    } else if (p.phase === 'waiting') {
+      const secs = Math.max(1, Math.round((p.waitMs ?? 0) / 1000));
+      detail.textContent = `Next: ${p.label || 'next field'} (in ${secs} s)`;
+    } else {
+      const verb = ACTION_VERB[p.action ?? 'type'];
+      detail.textContent = `${verb}: ${p.label || 'field'}`;
+    }
+    eta.textContent = p.etaMs === null ? '' : `${formatRemaining(p.etaMs)} left`;
   }
 
   showError(message: string): void {
+    this.run = null;
     if (this.fab) this.fab.disabled = false;
     this.frame(
       [h('div', { class: 'note error' }, message)],
@@ -239,8 +307,19 @@ export class Panel {
   }
 
   showReport(report: TabReport): void {
+    this.run = null;
     if (this.fab) this.fab.disabled = false;
     const body: Node[] = [];
+
+    if (report.stopped) {
+      body.push(
+        h(
+          'div',
+          { class: 'note' },
+          'Stopped. Fields filled so far are kept; the ones below still need a value.',
+        ),
+      );
+    }
 
     if (report.profileEmpty) {
       body.push(

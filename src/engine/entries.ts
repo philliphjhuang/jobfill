@@ -92,6 +92,8 @@ export function findAddButton(doc: Document, kind: EntryKind): HTMLElement | nul
 export interface EnsureEntriesOptions {
   quietMs: number;
   maxMs: number;
+  /** Called before each click (human-like pause; throws if the user stopped). */
+  beforeClick?: (kind: EntryKind) => Promise<void>;
 }
 
 /**
@@ -114,6 +116,8 @@ export async function ensureEntries(
       attempts++;
       const button = findAddButton(doc, kind);
       if (!button) break;
+      await opts.beforeClick?.(kind);
+      if (!button.isConnected) break;
       withSubmitGuard(doc, () => button.click());
       await waitForDomSettled(doc.body, opts.quietMs, opts.maxMs);
       fields = rescan();

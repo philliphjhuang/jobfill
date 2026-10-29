@@ -292,6 +292,14 @@ export function countryCandidates(country: string): string[] {
   return group ? [country, ...group.filter((a) => a !== country)] : [country];
 }
 
+/** "UK" → "United Kingdom", "USA" → "United States"; unknown names are returned as-is. */
+export function canonicalCountry(country: string): string {
+  const n = normalize(country);
+  return (
+    COUNTRY_ALIASES.find((g) => g.some((alias) => normalize(alias) === n))?.[0] ?? country.trim()
+  );
+}
+
 export function isUnitedStates(country: string): boolean {
   return countryCandidates(country).includes('United States');
 }

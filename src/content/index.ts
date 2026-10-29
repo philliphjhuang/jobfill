@@ -1,19 +1,25 @@
 /**
- * Content script: runs in every frame. Exposes `__jobfill.run()` for the
- * service worker (which calls it in all frames via chrome.scripting) and,
- * in the top frame, shows the floating button and results panel.
+ * Content script: runs in every frame. Exposes `__jobfill.start()` for the
+ * service worker (which calls it in all frames via chrome.scripting); a run
+ * then reports progress and its result by message. In the top frame it also
+ * shows the floating button and results panel, and assembles the frames'
+ * reports into one result.
  */
 import { findEmbeddedAts, detectAts } from '../engine/ats';
 import { classifyAll } from '../engine/classifier';
 import { FillEngine, looksLikeApplication, scopeToApplication } from '../engine/engine';
 import { scanFields } from '../engine/scanner';
-import type { Message } from '../shared/messages';
+import type { Message, RunMode, StartResult } from '../shared/messages';
 import type { FrameReport } from '../shared/report';
 import { Store } from '../shared/storage';
+import { RunCoordinator } from './coordinator';
 import { Panel } from './panel';
 
 interface JobfillApi {
-  run(mode: 'fill' | 'verify'): Promise<FrameReport | null>;
+  /** Begin a run in this frame without waiting for it (a paced fill takes minutes). */
+  start(mode: RunMode, runId: string): StartResult;
+  /** Stop this frame's run; it finishes the current field and reports. */
+  stop(): void;
   focus(ref: number): boolean;
 }
 
@@ -61,25 +67,35 @@ function emptyReport(error?: string): FrameReport {
 function init(): void {
   const store = new Store();
   let engine: FillEngine | null = null;
-  let running: Promise<FrameReport | null> | null = null;
+  let active: AbortController | null = null;
 
   const api: JobfillApi = {
-    run(mode) {
-      if (running) return running;
-      running = (async () => {
+    start(mode, runId) {
+      if (active) return 'busy';
+      // Ad/embed frames: skip without loading the profile and resume into memory.
+      if (!pageHasApplication(false)) return 'no-form';
+      const controller = new AbortController();
+      active = controller;
+      void (async () => {
+        let report: FrameReport;
         try {
-          // Ad/embed frames: skip without loading the profile and resume into memory.
-          if (!pageHasApplication(false)) return emptyReport();
           const data = await store.loadAll();
-          engine = new FillEngine(document, data);
-          return mode === 'fill' ? await engine.fill() : await engine.verify();
+          engine = new FillEngine(document, data, {
+            signal: controller.signal,
+            onProgress: (progress) => void send({ type: 'FRAME_PROGRESS', runId, progress }),
+          });
+          report = mode === 'fill' ? await engine.fill() : await engine.verify();
         } catch (err) {
-          return emptyReport(err instanceof Error ? err.message : String(err));
+          report = emptyReport(err instanceof Error ? err.message : String(err));
         } finally {
-          running = null;
+          active = null;
         }
+        void send({ type: 'FRAME_DONE', runId, report });
       })();
-      return running;
+      return 'started';
+    },
+    stop() {
+      active?.abort();
     },
     focus(ref) {
       return engine?.focus(ref) ?? false;
@@ -91,8 +107,16 @@ function init(): void {
     ? new Panel({
         onFill: () => void send({ type: 'FILL_TAB' }),
         onVerify: () => void send({ type: 'VERIFY_TAB' }),
+        onStop: () => void send({ type: 'STOP_TAB' }),
         onFocus: (frameId, ref) => void send({ type: 'FOCUS_FIELD', frameId, ref }),
         onOpenOptions: (hash) => void send({ type: 'OPEN_OPTIONS', hash }),
+      })
+    : null;
+
+  const coordinator = isTop
+    ? new RunCoordinator((_runId, report) => {
+        panel?.showReport(report);
+        void send({ type: 'RUN_COMPLETE', report });
       })
     : null;
 
@@ -102,10 +126,19 @@ function init(): void {
         panel?.showButton();
         break;
       case 'RUN_STARTED':
+        // Show the running state first: the coordinator may finish at once
+        // (no form on the page, or every frame already reported).
         panel?.showRunning(message.mode);
+        coordinator?.started(message.runId, message.mode, message.frameIds, message.profileEmpty);
         break;
-      case 'SHOW_REPORT':
-        panel?.showReport(message.report);
+      case 'RUN_PROGRESS':
+        if (coordinator?.activeRun === message.runId) panel?.showProgress(message.progress);
+        break;
+      case 'FRAME_REPORT':
+        coordinator?.report(message.runId, message.frameId, message.report);
+        break;
+      case 'STOP_RUN':
+        api.stop();
         break;
       case 'SHOW_ERROR':
         panel?.showError(message.error);

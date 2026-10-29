@@ -82,6 +82,15 @@ describe('Store', () => {
     expect(all.documents).toEqual({ resume: null, coverLetter: null });
   });
 
+  it('treats an empty stored file as missing so it is never uploaded', async () => {
+    const area = new MemoryArea();
+    area.data.documents = {
+      resume: { name: 'resume.pdf', type: 'application/pdf', size: 0, data: '', updatedAt: '' },
+      coverLetter: null,
+    };
+    expect((await new Store(area).loadDocuments()).resume).toBeNull();
+  });
+
   it('refuses oversized files', async () => {
     const store = new Store(new MemoryArea());
     const big = {

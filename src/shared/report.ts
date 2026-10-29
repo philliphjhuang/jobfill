@@ -43,7 +43,25 @@ export interface FrameReport {
   fields: FieldReport[];
   missing: MissingItem[];
   durationMs: number;
+  /** The user pressed Stop before the run finished. */
+  stopped?: boolean;
   error?: string;
+}
+
+/** Live status of a paced fill, shown in the in-page panel. */
+export interface RunProgress {
+  /** 1-based number of the field being worked on. */
+  step: number;
+  /** Fields expected to be filled in this run (grows if new fields appear). */
+  total: number;
+  label: string;
+  /** What happens to the field: typed, chosen from options, uploaded or clicked. */
+  action?: 'type' | 'choose' | 'upload' | 'click';
+  phase: 'waiting' | 'typing' | 'paused';
+  /** Length of the pause before this field, when `phase` is "waiting". */
+  waitMs?: number;
+  /** Rough time left, or null when unknown. */
+  etaMs: number | null;
 }
 
 export interface TabFieldReport extends FieldReport {
@@ -69,6 +87,8 @@ export interface TabReport {
   /** True when no frame contained anything that looked like a form. */
   noForm: boolean;
   profileEmpty: boolean;
+  /** The user pressed Stop; fields after that point were left untouched. */
+  stopped: boolean;
 }
 
 export function mergeFrameReports(
@@ -109,5 +129,6 @@ export function mergeFrameReports(
     errors,
     noForm: fields.length === 0 && missing.length === 0,
     profileEmpty,
+    stopped: frames.some((f) => f.report?.stopped === true),
   };
 }

@@ -2,6 +2,7 @@ import type {
   CustomAnswer,
   Documents,
   Education,
+  PacingSettings,
   Profile,
   Settings,
   WorkExperience,
@@ -101,6 +102,14 @@ export function createEmptyProfile(): Profile {
   };
 }
 
+export const DEFAULT_PACING: Readonly<PacingSettings> = Object.freeze({
+  enabled: true,
+  keyMinSec: 0.1,
+  keyMaxSec: 0.9,
+  fieldMinSec: 3,
+  fieldMaxSec: 7,
+});
+
 export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({
   floatingButton: 'auto',
   overwriteExisting: false,
@@ -110,6 +119,7 @@ export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({
   addMissingEntries: true,
   highlightFields: true,
   keepHistory: true,
+  pacing: DEFAULT_PACING,
 });
 
 export function createEmptyDocuments(): Documents {
@@ -164,6 +174,27 @@ export function normalizeProfile(raw: unknown): Profile {
   return profile;
 }
 
+const clampSec = (value: number, fallback: number, max: number): number =>
+  Number.isFinite(value) ? Math.min(Math.max(value, 0), max) : fallback;
+
+/** Keep delays finite, non-negative and bounded, with min ≤ max. */
+export function normalizePacing(raw: PacingSettings): PacingSettings {
+  const keyA = clampSec(raw.keyMinSec, DEFAULT_PACING.keyMinSec, 10);
+  const keyB = clampSec(raw.keyMaxSec, DEFAULT_PACING.keyMaxSec, 10);
+  const fieldA = clampSec(raw.fieldMinSec, DEFAULT_PACING.fieldMinSec, 120);
+  const fieldB = clampSec(raw.fieldMaxSec, DEFAULT_PACING.fieldMaxSec, 120);
+  return {
+    enabled: raw.enabled,
+    keyMinSec: Math.min(keyA, keyB),
+    keyMaxSec: Math.max(keyA, keyB),
+    fieldMinSec: Math.min(fieldA, fieldB),
+    fieldMaxSec: Math.max(fieldA, fieldB),
+  };
+}
+
 export function normalizeSettings(raw: unknown): Settings {
-  return mergeWithDefaults<Settings>({ ...DEFAULT_SETTINGS }, raw);
+  // Deep copy: the defaults are frozen and shared, and the editor mutates settings in place.
+  const settings = mergeWithDefaults<Settings>(structuredClone(DEFAULT_SETTINGS) as Settings, raw);
+  settings.pacing = normalizePacing(settings.pacing);
+  return settings;
 }

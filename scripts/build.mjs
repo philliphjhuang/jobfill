@@ -22,6 +22,8 @@ const STATIC = [
   ['src/options/options.html', 'options.html'],
   ['src/options/options.css', 'options.css'],
   ['public/icons', 'icons'],
+  // pdf.js parses resumes in a worker (options page only).
+  ['node_modules/pdfjs-dist/build/pdf.worker.min.mjs', 'pdf.worker.min.mjs'],
 ];
 
 function copyStatic() {

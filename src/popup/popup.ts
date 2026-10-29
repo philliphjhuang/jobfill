@@ -1,4 +1,4 @@
-import { completenessPercent, profileChecklist } from '../shared/completeness';
+import { completenessPercent, isProfileEmpty, profileChecklist } from '../shared/completeness';
 import type { Message, RunResponse } from '../shared/messages';
 import { Store } from '../shared/storage';
 import { clear, h } from '../ui/h';
@@ -17,7 +17,7 @@ async function activeTabId(): Promise<number | undefined> {
 }
 
 async function render(): Promise<void> {
-  const { profile, documents } = await store.loadAll();
+  const { profile, documents, settings } = await store.loadAll();
   const percent = completenessPercent(profile, documents);
   const todo = profileChecklist(profile, documents).filter((i) => !i.done);
   const name = [profile.personal.firstName, profile.personal.lastName].filter(Boolean).join(' ');
@@ -29,7 +29,7 @@ async function render(): Promise<void> {
     const tabId = await activeTabId();
     if (tabId === undefined) return;
     fillBtn.disabled = true;
-    fillBtn.textContent = 'Filling…';
+    fillBtn.textContent = 'Starting…';
     clear(resultSlot);
     const res = (await chrome.runtime.sendMessage({
       type: 'FILL_TAB',
@@ -41,27 +41,12 @@ async function render(): Promise<void> {
       resultSlot.appendChild(h('div', { class: 'error' }, res?.error ?? 'Something went wrong.'));
       return;
     }
-    const r = res.report;
-    if (r.noForm) {
-      resultSlot.appendChild(
-        h(
-          'div',
-          { class: 'muted', style: 'margin-top:10px' },
-          'No application form found on this page.',
-        ),
-      );
-      return;
-    }
-    resultSlot.append(
-      h(
-        'div',
-        { class: 'result' },
-        h('div', { class: 'ok' }, h('b', null, r.filledCount), 'filled'),
-        h('div', { class: 'bad' }, h('b', null, r.requiredMissing), 'required empty'),
-        h('div', { class: 'warn' }, h('b', null, r.optionalMissing), 'optional empty'),
-      ),
-      h('p', { class: 'muted' }, 'Details and links to each empty field are shown on the page.'),
-    );
+    const note = !res.started
+      ? 'No application form found on this page.'
+      : settings.pacing.enabled
+        ? 'Filling started. JobFill types like a person, so this takes a few minutes. Progress, a Stop button and the results are shown on the page. You can close this popup.'
+        : 'Filling started. The results are shown on the page.';
+    resultSlot.appendChild(h('p', { class: 'muted', style: 'margin-top:10px' }, note));
   });
 
   clear(app);
@@ -99,6 +84,17 @@ async function render(): Promise<void> {
         { class: 'muted' },
         `Profile ${percent}% complete${documents.resume ? ` · Resume: ${documents.resume.name}` : ' · No resume uploaded'}`,
       ),
+      isProfileEmpty(profile)
+        ? h(
+            'button',
+            {
+              type: 'button',
+              class: 'secondary setup',
+              on: { click: () => openOptions('import') },
+            },
+            'Set up my profile from my resume',
+          )
+        : null,
       todo.length
         ? h(
             'ul',

@@ -1,10 +1,16 @@
 /**
- * Service worker: coordinates fills across every frame of a tab, merges the
- * per-frame reports, relays UI messages and records the application log.
+ * Service worker: starts runs in every frame of a tab, relays progress and
+ * per-frame reports to the top frame, broadcasts Stop, and records the
+ * application log.
+ *
+ * Runs are event-driven on purpose: a paced fill (typing one character at a
+ * time) can take many minutes, and Chrome terminates a service worker that
+ * spends more than 5 minutes on a single call. Every handler here returns in
+ * milliseconds; the run itself lives in the page's content script.
  */
 import { isProfileEmpty } from '../shared/completeness';
-import type { Message, RunResponse } from '../shared/messages';
-import { mergeFrameReports, type FrameReport, type TabReport } from '../shared/report';
+import { newId } from '../shared/defaults';
+import type { Message, RunMode, RunResponse, StartResult } from '../shared/messages';
 import { Store } from '../shared/storage';
 
 const store = new Store();
@@ -20,9 +26,10 @@ function toTop(tabId: number, message: Message): void {
 }
 
 /** Runs inside each frame via chrome.scripting — must be self-contained. */
-function runInFrame(mode: 'fill' | 'verify'): Promise<unknown> | null {
-  const api = (globalThis as { __jobfill?: { run(m: string): Promise<unknown> } }).__jobfill;
-  return api ? api.run(mode) : null;
+function startInFrame(mode: RunMode, runId: string): StartResult | 'missing' {
+  const api = (globalThis as { __jobfill?: { start(m: RunMode, id: string): StartResult } })
+    .__jobfill;
+  return api ? api.start(mode, runId) : 'missing';
 }
 
 /** Inject the content script into frames that loaded before the extension did. */
@@ -52,49 +59,51 @@ function friendlyError(err: unknown): string {
   return msg;
 }
 
-async function runOnTab(tabId: number, mode: 'fill' | 'verify'): Promise<RunResponse> {
-  toTop(tabId, { type: 'RUN_STARTED', mode });
+const BUSY_MESSAGE =
+  'JobFill is already filling this page. Press Stop in the JobFill panel to start over.';
+
+async function runOnTab(tabId: number, mode: RunMode): Promise<RunResponse> {
+  const runId = newId();
   try {
     await ensureInjected(tabId);
     const results = await chrome.scripting.executeScript({
       target: { tabId, allFrames: true },
-      func: runInFrame,
-      args: [mode],
+      func: startInFrame,
+      args: [mode, runId],
     });
-    const [profile, settings] = await Promise.all([store.loadProfile(), store.loadSettings()]);
-    const report: TabReport = mergeFrameReports(
-      mode,
-      results.map((r) => ({
-        frameId: r.frameId,
-        report: (r.result ?? null) as FrameReport | null,
-      })),
-      isProfileEmpty(profile),
-    );
-    toTop(tabId, { type: 'SHOW_REPORT', report });
-
-    if (mode === 'fill' && settings.keepHistory && !report.noForm && report.url) {
-      let host = '';
-      try {
-        host = new URL(report.url).hostname;
-      } catch {
-        /* keep empty */
-      }
-      await store.addHistory({
-        url: report.url,
-        host,
-        title: report.title,
-        ats: report.ats,
-        filled: report.filledCount,
-        requiredMissing: report.requiredMissing,
-        optionalMissing: report.optionalMissing,
-      });
+    const frameIds = results.filter((r) => r.result === 'started').map((r) => r.frameId);
+    // A run is still going: leave it (and its panel) alone.
+    if (!frameIds.length && results.some((r) => r.result === 'busy')) {
+      return { ok: false, error: BUSY_MESSAGE };
     }
-    return { ok: true, report };
+    const profileEmpty = isProfileEmpty(await store.loadProfile());
+    toTop(tabId, { type: 'RUN_STARTED', runId, mode, frameIds, profileEmpty });
+    return { ok: true, started: frameIds.length };
   } catch (err) {
     const error = friendlyError(err);
     toTop(tabId, { type: 'SHOW_ERROR', error });
     return { ok: false, error };
   }
+}
+
+async function recordHistory(report: Extract<Message, { type: 'RUN_COMPLETE' }>['report']) {
+  const settings = await store.loadSettings();
+  if (report.mode !== 'fill' || !settings.keepHistory || report.noForm || !report.url) return;
+  let host = '';
+  try {
+    host = new URL(report.url).hostname;
+  } catch {
+    /* keep empty */
+  }
+  await store.addHistory({
+    url: report.url,
+    host,
+    title: report.title,
+    ats: report.ats,
+    filled: report.filledCount,
+    requiredMissing: report.requiredMissing,
+    optionalMissing: report.optionalMissing,
+  });
 }
 
 chrome.runtime.onMessage.addListener((message: Message, sender, sendResponse) => {
@@ -110,6 +119,38 @@ chrome.runtime.onMessage.addListener((message: Message, sender, sendResponse) =>
       void runOnTab(tabId, message.type === 'FILL_TAB' ? 'fill' : 'verify').then(sendResponse);
       return true;
     }
+    case 'STOP_TAB': {
+      const tabId = message.tabId ?? senderTab;
+      if (tabId !== undefined) {
+        chrome.tabs
+          .sendMessage(tabId, { type: 'STOP_RUN' } satisfies Message)
+          .catch(() => undefined);
+      }
+      return false;
+    }
+    case 'FRAME_PROGRESS':
+      if (senderTab !== undefined) {
+        toTop(senderTab, {
+          type: 'RUN_PROGRESS',
+          runId: message.runId,
+          frameId: sender.frameId ?? 0,
+          progress: message.progress,
+        });
+      }
+      return false;
+    case 'FRAME_DONE':
+      if (senderTab !== undefined) {
+        toTop(senderTab, {
+          type: 'FRAME_REPORT',
+          runId: message.runId,
+          frameId: sender.frameId ?? 0,
+          report: message.report,
+        });
+      }
+      return false;
+    case 'RUN_COMPLETE':
+      void recordHistory(message.report);
+      return false;
     case 'OPEN_OPTIONS': {
       const url = chrome.runtime.getURL(`options.html${message.hash ? `#${message.hash}` : ''}`);
       void chrome.tabs.create({ url });

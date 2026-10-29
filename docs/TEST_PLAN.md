@@ -2,16 +2,20 @@
 
 ## 1. Strategy
 
-| Level       | Tooling                               | Scope                                                                                                                                                  | Runs                |
-| ----------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------- |
-| Static      | `tsc --strict`, ESLint, Prettier      | Types, unsafe patterns (`innerHTML` banned), formatting                                                                                                | Every commit/PR     |
-| Unit        | Vitest + jsdom (`tests/unit`)         | Text normalization, option matching, classifier rule table, scanner labels, resolver, dates, storage/migration, report merge, fillers, panel rendering | Every commit/PR     |
-| Integration | Vitest + jsdom (`tests/integration`)  | Full `FillEngine.fill()` on four ATS-style fixtures in `demo/`, with interactive widgets                                                               | Every commit/PR     |
-| End-to-end  | Puppeteer + real Chrome (`tests/e2e`) | Built extension loaded unpacked: detection, floating button, service worker orchestration, `executeScript` across frames, panel, focus, history        | CI + before release |
-| Manual      | Checklist below                       | Real ATS sites, visual review, multi-step flows                                                                                                        | Before release      |
+| Level       | Tooling                               | Scope                                                                                                                                                                                                                                                                                        | Runs                |
+| ----------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| Static      | `tsc --strict`, ESLint, Prettier      | Types, unsafe patterns (`innerHTML` banned), formatting                                                                                                                                                                                                                                      | Every commit/PR     |
+| Unit        | Vitest + jsdom (`tests/unit`)         | Text normalization, option matching, classifier rule table, scanner labels, resolver, dates, storage/migration, report merge, fillers, panel rendering; resume extraction (DOCX in jsdom, PDF through pdf.js in a Node-environment test), parser layouts, merge planning, Yes/No/Edit dialog | Every commit/PR     |
+| Integration | Vitest + jsdom (`tests/integration`)  | Full `FillEngine.fill()` on four ATS-style fixtures in `demo/`, with interactive widgets                                                                                                                                                                                                     | Every commit/PR     |
+| End-to-end  | Puppeteer + real Chrome (`tests/e2e`) | Built extension loaded unpacked: detection, floating button, service worker orchestration, `executeScript` across frames, panel, focus, history; resume import with the bundled pdf.js worker and the review dialog                                                                          | CI + before release |
+| Manual      | Checklist below                       | Real ATS sites, visual review, multi-step flows                                                                                                                                                                                                                                              | Before release      |
 
 Coverage thresholds (enforced by `npm run coverage`): lines/statements 70 %, functions 70 %,
-branches 60 %. Current: ~87 % lines.
+branches 60 %. Current: ~92 % lines.
+
+Pacing tests never actually wait: the engine accepts an injected `sleep`, so the tests record
+every requested delay and assert its range and position (between two characters of a field, or
+before a new field). The e2e suite runs real timers with shortened delays.
 
 ## 2. Fixtures
 
@@ -24,25 +28,41 @@ real site). They double as manual test pages (`npm run demo`).
 | `lever-style.html`      | Wrapping labels, `✱` required marker, `urls[...]` link fields, radio + checkbox questions, numeric range select, custom answer, cover letter textarea, consent box           |
 | `workday-style.html`    | `data-automation-id` fields, button dropdowns portaled to `<body>`, "Add" work/education sections, grouped Month/Year inputs, disability checkbox group with vague legend    |
 | `generic.html`          | Div labels, placeholder-only input, shadow-DOM field, `type=number/date/month`, fieldset radios, checkbox groups, paragraph questions, required essay                        |
+| `sample-resume.pdf`     | Two-column resume: right-aligned dates, bullets and dashes in WinAnsi encoding, wrapped bullet, link annotation (portfolio), GPA, skills with categories                     |
+| `sample-resume.docx`    | Company-first layout, international phone, numbered bullets, education in a table row, tab-separated skills, LinkedIn as a hyperlink relationship                            |
+
+Both resumes are generated by `node scripts/make-sample-resumes.mjs`; the parser tests also
+include plain-text fixtures for a student layout (education first, expected graduation).
 
 ## 3. Traceability
 
-| Requirement                | Verified by                                                                                                              |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| FR-1–FR-9 profile data     | `shared.test.ts` (storage round-trip, migration), e2e profile seeding, manual editor checklist                           |
-| FR-11 import/export/delete | `shared.test.ts` (`normalizeProfile`, `clearAll`), manual                                                                |
-| FR-20 detection            | e2e (button appears on all fixtures), `fillers-and-entries.test.ts` (ATS host + iframe detection)                        |
-| FR-22 all frames           | `shared.test.ts` (`mergeFrameReports`), e2e                                                                              |
-| FR-23 resume first         | integration (resume attached on every fixture), `fillers-and-entries.test.ts` (`setInputFiles`)                          |
-| FR-24 classification       | `classifier.test.ts` (~80 labelled cases), `scanner.test.ts`                                                             |
-| FR-25 control kinds        | `scanner.test.ts`, integration (every kind appears in a fixture)                                                         |
-| FR-26 fuzzy matching       | `text-and-matcher.test.ts` (EEO wording, negation, countries, degrees, ranges)                                           |
-| FR-27 entries              | `classifier.test.ts` (indexing), `fillers-and-entries.test.ts` (Add button), integration (Workday, Greenhouse repeaters) |
-| FR-28 no overwrite/submit  | integration ("never overwrites"), `fillers-and-entries.test.ts` (submit guard, checkbox not unchecked)                   |
-| FR-30 EEO toggle           | integration ("leaves voluntary questions alone")                                                                         |
-| FR-40–FR-42 verification   | integration (`missing` lists, highlight attributes, `focus`), e2e (click focuses field)                                  |
-| FR-45 history              | `shared.test.ts` (cap, clear), e2e (entries recorded)                                                                    |
-| NFR-2 XSS safety           | `panel.test.ts` (label rendered as text), ESLint rule                                                                    |
+| Requirement                | Verified by                                                                                                                   |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| FR-1–FR-9 profile data     | `shared.test.ts` (storage round-trip, migration), e2e profile seeding, manual editor checklist                                |
+| FR-11 import/export/delete | `shared.test.ts` (`normalizeProfile`, `clearAll`), manual                                                                     |
+| FR-12 resume import entry  | `resume-extract.test.ts` (file kinds), `resume-import-ui.test.ts` (unsupported/empty files), e2e (editor upload)              |
+| FR-13 resume parsing       | `resume-parse.test.ts` (3 layouts + building blocks), `resume-extract.test.ts` (DOCX), `resume-pdf.test.ts` (pdf.js)          |
+| FR-14 fill empty fields    | `resume-merge.test.ts` (empty profile, new entries, re-import no-op), `resume-import-ui.test.ts`, e2e                         |
+| FR-15 Yes / No / Edit      | `resume-merge.test.ts` (conflicts, equivalence), `resume-import-ui.test.ts` (each button, Undo), e2e (Yes + Edit)             |
+| FR-16 bulk, undo, file     | `resume-import-ui.test.ts` ("Yes to all remaining", Done keeps unanswered, resume-file conflict)                              |
+| FR-20 detection            | e2e (button appears on all fixtures), `fillers-and-entries.test.ts` (ATS host + iframe detection)                             |
+| FR-22 all frames           | `shared.test.ts` (`mergeFrameReports`), e2e                                                                                   |
+| FR-23 resume first         | integration (resume attached on every fixture), `fillers-and-entries.test.ts` (`setInputFiles`)                               |
+| FR-24 classification       | `classifier.test.ts` (~80 labelled cases), `scanner.test.ts`                                                                  |
+| FR-25 control kinds        | `scanner.test.ts`, integration (every kind appears in a fixture)                                                              |
+| FR-26 fuzzy matching       | `text-and-matcher.test.ts` (EEO wording, negation, countries, degrees, ranges)                                                |
+| FR-27 entries              | `classifier.test.ts` (indexing), `fillers-and-entries.test.ts` (Add button), integration (Workday, Greenhouse repeaters)      |
+| FR-28 no overwrite/submit  | integration ("never overwrites"), `fillers-and-entries.test.ts` (submit guard, checkbox not unchecked)                        |
+| FR-30 EEO toggle           | integration ("leaves voluntary questions alone")                                                                              |
+| FR-40–FR-42 verification   | integration (`missing` lists, highlight attributes, `focus`), e2e (click focuses field)                                       |
+| FR-45 history              | `shared.test.ts` (cap, clear), e2e (entries recorded)                                                                         |
+| FR-31 per-character typing | `typing.test.ts` (event sequence, masks, number fields, line breaks), `paced-fill.test.ts` (name built key by key), e2e       |
+| FR-32 field pauses         | `pacing.test.ts` (ranges, none before first field), `paced-fill.test.ts` (one 3–7 s pause per field, 0.1–0.9 s within)        |
+| FR-33 pacing settings      | `pacing.test.ts` (defaults, repair of bad ranges, defaults never shared)                                                      |
+| FR-34 progress + Stop UI   | `panel.test.ts` (progress text, Stop button), `coordinator.test.ts`, e2e (progress shown)                                     |
+| FR-35 Stop                 | `typing.test.ts` (field completed), `paced-fill.test.ts` (later fields untouched, report), `pacing.test.ts` (hidden tab), e2e |
+| NFR-11 long runs           | `coordinator.test.ts` (out-of-order reports, multi-frame merge), e2e (paced runs complete and are logged)                     |
+| NFR-2 XSS safety           | `panel.test.ts` (label rendered as text), ESLint rule                                                                         |
 
 ## 4. Manual release checklist
 
@@ -51,6 +71,9 @@ Run on the packaged build (`npm run package`, load `dist/` unpacked) with a real
 - [ ] Fresh install opens the profile editor; completeness bar updates as fields are filled.
 - [ ] Upload/replace/preview/remove resume; files over 10 MB are rejected with a message.
 - [ ] Export → delete all data → import restores profile, settings and (optionally) files.
+- [ ] Fill from resume with 2–3 real resumes (Word export, Google Docs export, LaTeX PDF, .docx):
+      empty fields fill without prompts; changed fields prompt; Yes / No / Edit / Undo behave;
+      a scanned PDF shows the "no text found" message.
 - [ ] On one live posting each for Greenhouse, Lever, Ashby and Workday (do **not** submit):
   - [ ] floating button appears; Alt+Shift+F and the popup also work;
   - [ ] resume attaches; parsed values are not overwritten;

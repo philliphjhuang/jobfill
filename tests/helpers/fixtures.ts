@@ -134,7 +134,12 @@ export function sampleData(
 ): StoredData {
   return {
     profile: overrides.profile ?? sampleProfile(),
-    settings: { ...DEFAULT_SETTINGS, ...overrides.settings },
+    // Tests fill instantly unless they opt into pacing (it is on by default for users).
+    settings: {
+      ...DEFAULT_SETTINGS,
+      pacing: { ...DEFAULT_SETTINGS.pacing, enabled: false },
+      ...overrides.settings,
+    },
     documents: {
       resume: {
         name: 'Ada_Lovelace_Resume.pdf',

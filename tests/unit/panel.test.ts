@@ -35,6 +35,7 @@ describe('in-page panel', () => {
       onFill: vi.fn(),
       onVerify: vi.fn(),
       onFocus,
+      onStop: vi.fn(),
       onOpenOptions: vi.fn(),
     });
     panel.showButton();
@@ -55,6 +56,7 @@ describe('in-page panel', () => {
       onFill: vi.fn(),
       onVerify: vi.fn(),
       onFocus: vi.fn(),
+      onStop: vi.fn(),
       onOpenOptions: vi.fn(),
     });
     panel.showReport(report('<img src=x onerror="alert(1)">'));
@@ -69,6 +71,7 @@ describe('in-page panel', () => {
       onFill,
       onVerify: vi.fn(),
       onFocus: vi.fn(),
+      onStop: vi.fn(),
       onOpenOptions: vi.fn(),
     });
     panel.showRunning('fill');
@@ -78,5 +81,67 @@ describe('in-page panel', () => {
     expect(root.querySelector('.note.error')?.textContent).toBe('Cannot run here');
     root.querySelector<HTMLButtonElement>('.btn.primary')!.click();
     expect(onFill).toHaveBeenCalled();
+  });
+
+  it('shows live progress of a paced fill and a working Stop button', () => {
+    const onStop = vi.fn();
+    const panel = new Panel({
+      onFill: vi.fn(),
+      onVerify: vi.fn(),
+      onFocus: vi.fn(),
+      onStop,
+      onOpenOptions: vi.fn(),
+    });
+    panel.showRunning('fill');
+    const root = document.getElementById('jobfill-host')!.shadowRoot!;
+    const text = () => root.querySelector('.running')!.textContent;
+
+    panel.showProgress({
+      step: 3,
+      total: 20,
+      label: 'Email',
+      phase: 'waiting',
+      waitMs: 4200,
+      etaMs: 300_000,
+    });
+    expect(text()).toContain('Field 3 of 20');
+    expect(text()).toContain('Next: Email (in 4 s)');
+    expect(text()).toContain('about 5 min left');
+
+    panel.showProgress({ step: 3, total: 20, label: 'Email', phase: 'typing', etaMs: 30_000 });
+    expect(text()).toContain('Typing: Email');
+    expect(text()).toContain('less than a minute left');
+
+    panel.showProgress({
+      step: 1,
+      total: 20,
+      label: 'Resume/CV',
+      action: 'upload',
+      phase: 'typing',
+      etaMs: null,
+    });
+    expect(text()).toContain('Uploading: Resume/CV');
+
+    panel.showProgress({ step: 3, total: 20, label: 'Email', phase: 'paused', etaMs: null });
+    expect(text()).toContain('Paused while this tab is in the background');
+
+    const stop = root.querySelector<HTMLButtonElement>('.btn.stop')!;
+    stop.click();
+    expect(onStop).toHaveBeenCalledTimes(1);
+    expect(stop.disabled).toBe(true);
+    expect(text()).toContain('Finishing the current field');
+  });
+
+  it('says when a run was stopped', () => {
+    const panel = new Panel({
+      onFill: vi.fn(),
+      onVerify: vi.fn(),
+      onFocus: vi.fn(),
+      onStop: vi.fn(),
+      onOpenOptions: vi.fn(),
+    });
+    panel.showReport({ ...report('Phone'), stopped: true });
+    const root = document.getElementById('jobfill-host')!.shadowRoot!;
+    expect(root.querySelector('.note')?.textContent).toMatch(/^Stopped\./);
   });
 });

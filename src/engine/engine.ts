@@ -3,8 +3,12 @@
  *   1. scan + classify   2. upload resume first (many ATSs parse it)
  *   3. add missing work/education slots   4. fill   5. fill fields that
  *   appeared as a result   6. verify every field and flag what is empty.
+ *
+ * With pacing on (the default) every field is typed one character at a time
+ * with a pause before each new field; progress is reported as it goes and the
+ * run can be stopped, after which the verification still runs.
  */
-import type { FieldReport, FrameReport, MissingItem } from '../shared/report';
+import type { FieldReport, FrameReport, MissingItem, RunProgress } from '../shared/report';
 import type { StoredData } from '../shared/types';
 import { detectAts, type AtsAdapter } from './ats';
 import { classifyAll } from './classifier';
@@ -13,6 +17,7 @@ import { assignEntryIndices, ensureEntries } from './entries';
 import { fillField, type FillOutcome } from './fillers';
 import { clearHighlights, flash, highlight, highlightTarget } from './highlight';
 import { EEO_TYPES, type ClassifiedField, type FieldType } from './model';
+import { Pacer, RunAborted, type Sleeper } from './pacing';
 import { resolveValue } from './resolver';
 import { scanFields } from './scanner';
 import { readValue } from './values';
@@ -34,6 +39,26 @@ export const DEFAULT_TIMING: EngineTiming = {
   uploadMaxMs: 8000,
   comboboxTimeoutMs: 1500,
 };
+
+export interface EngineOptions {
+  timing?: Partial<EngineTiming>;
+  /** Aborted when the user presses Stop. */
+  signal?: AbortSignal;
+  /** Live progress of a paced fill. */
+  onProgress?: (progress: RunProgress) => void;
+  /** Test hooks for the pacer. */
+  random?: () => number;
+  sleep?: Sleeper;
+}
+
+const TYPED_KINDS = new Set(['text', 'textarea']);
+
+function actionFor(field: ClassifiedField): RunProgress['action'] {
+  if (field.kind === 'file') return 'upload';
+  if (TYPED_KINDS.has(field.kind)) return 'type';
+  if (field.kind === 'combobox' && field.el.tagName === 'INPUT') return 'type';
+  return 'choose';
+}
 
 const IDENTITY_TYPES = new Set<FieldType>([
   'firstName',
@@ -81,13 +106,82 @@ export class FillEngine {
   private outcomes = new Map<Element, FieldReport>();
   private flagged: HTMLElement[] = [];
   private readonly adapter: AtsAdapter | null;
+  private readonly timing: EngineTiming;
+  private readonly pacer: Pacer;
+  private stopped = false;
+  // Progress of a paced run.
+  private step = 0;
+  private total = 0;
+  private currentLabel = '';
+  private currentAction: RunProgress['action'] = 'type';
+  private startedAt = 0;
+  private estimateMs = 0;
 
   constructor(
     private readonly doc: Document,
     private readonly data: StoredData,
-    private readonly timing: EngineTiming = DEFAULT_TIMING,
+    private readonly opts: EngineOptions = {},
   ) {
     this.adapter = detectAts(doc.location?.hostname ?? '');
+    this.timing = { ...DEFAULT_TIMING, ...opts.timing };
+    this.pacer = new Pacer(data.settings.pacing, {
+      random: opts.random,
+      sleep: opts.sleep,
+      signal: opts.signal,
+      doc,
+      onPause: (ms) => this.emit('waiting', ms),
+      onFieldStart: () => {
+        this.step++;
+        this.emit('typing');
+      },
+      onVisibility: (hidden) => this.emit(hidden ? 'paused' : 'typing'),
+    });
+  }
+
+  private emit(phase: RunProgress['phase'], waitMs?: number): void {
+    if (!this.pacer.enabled || !this.opts.onProgress) return;
+    // A pause belongs to the field that comes after it.
+    const step = phase === 'waiting' ? this.step + 1 : this.step;
+    this.total = Math.max(this.total, step);
+    const elapsed = Date.now() - this.startedAt;
+    this.opts.onProgress({
+      step,
+      total: this.total,
+      label: this.currentLabel,
+      action: this.currentAction,
+      phase,
+      ...(waitMs !== undefined ? { waitMs } : {}),
+      etaMs: this.estimateMs ? Math.max(0, this.estimateMs - elapsed) : null,
+    });
+  }
+
+  /** Count the fields this run will touch and the characters it will type. */
+  private plan(fields: ClassifiedField[]): void {
+    const { settings } = this.data;
+    let chars = 0;
+    let touches = 0;
+    for (const field of fields) {
+      const c = field.classification;
+      if (!c || field.readOnly || this.outcomes.has(field.el)) continue;
+      if (EEO_TYPES.has(c.type) && !settings.fillEeo) continue;
+      if (
+        field.kind === 'file' &&
+        !(c.type === 'resume' ? settings.uploadResume : settings.uploadCoverLetter)
+      ) {
+        continue;
+      }
+      const r = resolveValue(field, this.data);
+      if (!r || r.skipReason) continue;
+      if (!settings.overwriteExisting && readValue(field)) continue;
+      touches++;
+      const typed =
+        TYPED_KINDS.has(field.kind) || (field.kind === 'combobox' && field.el.tagName === 'INPUT');
+      if (typed) chars += (r.searchText ?? r.text ?? r.candidates?.[0] ?? '').length;
+    }
+    this.total = this.step + touches;
+    // Once a field has been filled, every remaining field is preceded by a pause.
+    const remaining = this.pacer.estimateMs(chars, touches + (this.step > 0 ? 1 : 0));
+    this.estimateMs = Date.now() - this.startedAt + remaining;
   }
 
   scan(): ClassifiedField[] {
@@ -141,14 +235,22 @@ export class FillEngine {
       this.record(field, { status: 'skipped', detail: resolved.skipReason });
       return;
     }
+    this.currentLabel = fallbackLabel(field);
+    this.currentAction = actionFor(field);
     try {
       const outcome = await fillField(field, resolved, {
         overwrite: settings.overwriteExisting,
         comboboxTimeoutMs: this.timing.comboboxTimeoutMs,
+        pacer: this.pacer,
       });
       if (c.type === 'resume' && outcome.status === 'filled') state.resumeDone = true;
       this.record(field, outcome);
     } catch (err) {
+      if (err instanceof RunAborted) {
+        // A text field interrupted mid-typing was completed before stopping.
+        if (readValue(field)) this.record(field, { status: 'filled', detail: readValue(field) });
+        throw err;
+      }
       this.record(field, {
         status: 'failed',
         detail: err instanceof Error ? err.message : String(err),
@@ -162,48 +264,68 @@ export class FillEngine {
 
   async fill(): Promise<FrameReport> {
     const started = Date.now();
+    this.startedAt = started;
     clearHighlights(this.doc);
     this.outcomes.clear();
     const state = { resumeDone: false };
 
     let fields = this.scan();
     if (!looksLikeApplication(fields)) return this.report(started, [], false);
+    this.plan(fields);
 
-    // 1. Resume first: Workday, Lever, Greenhouse and Ashby parse it and pre-fill fields.
-    const resumeField = fields.find(
-      (f) => f.kind === 'file' && f.classification?.type === 'resume',
-    );
-    if (resumeField) {
-      await this.fillOne(resumeField, state);
-      if (state.resumeDone) {
-        await this.settle(this.timing.uploadQuietMs, this.timing.uploadMaxMs);
-        fields = this.scan();
-      }
-    }
-
-    // 2. Make room for every work/education entry.
-    if (this.data.settings.addMissingEntries) {
-      const changed = await ensureEntries(
-        this.doc,
-        () => this.scan(),
-        { work: this.data.profile.work.length, education: this.data.profile.education.length },
-        { quietMs: this.timing.settleQuietMs, maxMs: this.timing.settleMaxMs },
+    try {
+      // 1. Resume first: Workday, Lever, Greenhouse and Ashby parse it and pre-fill fields.
+      const resumeField = fields.find(
+        (f) => f.kind === 'file' && f.classification?.type === 'resume',
       );
-      if (changed) fields = this.scan();
-    }
+      if (resumeField) {
+        await this.fillOne(resumeField, state);
+        if (state.resumeDone) {
+          await this.settle(this.timing.uploadQuietMs, this.timing.uploadMaxMs);
+          fields = this.scan();
+          this.plan(fields);
+        }
+      }
 
-    // 3. Main pass in page order (country before state, etc.).
-    for (const field of fields) {
-      if (this.outcomes.has(field.el)) continue;
-      await this.fillOne(field, state);
-    }
+      // 2. Make room for every work/education entry.
+      if (this.data.settings.addMissingEntries) {
+        const changed = await ensureEntries(
+          this.doc,
+          () => this.scan(),
+          { work: this.data.profile.work.length, education: this.data.profile.education.length },
+          {
+            quietMs: this.timing.settleQuietMs,
+            maxMs: this.timing.settleMaxMs,
+            beforeClick: async (kind) => {
+              this.currentLabel = kind === 'work' ? '"Add another" job' : '"Add another" school';
+              this.currentAction = 'click';
+              await this.pacer.field();
+            },
+          },
+        );
+        if (changed) {
+          fields = this.scan();
+          this.plan(fields);
+        }
+      }
 
-    // 4. Conditional questions revealed by earlier answers.
-    await this.settle();
-    fields = this.scan();
-    for (const field of fields) {
-      if (this.outcomes.has(field.el)) continue;
-      await this.fillOne(field, state);
+      // 3. Main pass in page order (country before state, etc.).
+      for (const field of fields) {
+        if (this.outcomes.has(field.el)) continue;
+        await this.fillOne(field, state);
+      }
+
+      // 4. Conditional questions revealed by earlier answers.
+      await this.settle();
+      fields = this.scan();
+      this.plan(fields);
+      for (const field of fields) {
+        if (this.outcomes.has(field.el)) continue;
+        await this.fillOne(field, state);
+      }
+    } catch (err) {
+      if (!(err instanceof RunAborted)) throw err;
+      this.stopped = true;
     }
 
     return this.report(started, this.scan(), true);
@@ -267,6 +389,7 @@ export class FillEngine {
       fields: reports,
       missing,
       durationMs: Date.now() - started,
+      ...(this.stopped ? { stopped: true } : {}),
     };
   }
 

@@ -25,7 +25,14 @@ function defaultArea(): KeyValueArea {
 function isStoredFile(value: unknown): value is StoredFile {
   if (typeof value !== 'object' || value === null) return false;
   const f = value as Record<string, unknown>;
-  return typeof f.name === 'string' && typeof f.data === 'string' && typeof f.type === 'string';
+  return (
+    typeof f.name === 'string' &&
+    typeof f.type === 'string' &&
+    typeof f.data === 'string' &&
+    // An empty payload (e.g. saved by the 0-byte import bug) is not a usable file;
+    // treating it as missing prompts a re-upload instead of attaching an empty PDF.
+    f.data.length > 0
+  );
 }
 
 function normalizeDocuments(raw: unknown): Documents {

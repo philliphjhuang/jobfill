@@ -7,7 +7,9 @@ import { createEmptyDocuments, normalizeProfile, normalizeSettings } from '../sh
 import { base64ToBytes, fileToStoredFile, formatBytes } from '../shared/files';
 import { MAX_FILE_BYTES, Store } from '../shared/storage';
 import type { Documents, Profile, Settings, StoredFile } from '../shared/types';
+import { resumeKind } from '../resume/extract';
 import { clear, h } from '../ui/h';
+import { ResumeImporter } from './resume-import';
 import {
   DEGREE_SUGGESTIONS,
   SECTIONS,
@@ -28,6 +30,23 @@ let documents: Documents = createEmptyDocuments();
 const sectionEls = new Map<string, HTMLElement>();
 const statusEl = h('span', { class: 'status', attrs: { role: 'status' } }, '');
 const progressEl = h('div', { class: 'progress-card' });
+
+const importer = new ResumeImporter({
+  profile: () => state.profile,
+  replaceProfile: (profile) => {
+    state.profile = profile;
+  },
+  documents: () => documents,
+  saveDocuments: async (next) => {
+    documents = next;
+    await store.saveDocuments(next);
+  },
+  save: () => scheduleSave(),
+  refresh: () => {
+    SECTIONS.forEach(renderSection);
+    renderProgress();
+  },
+});
 
 // ── Paths ────────────────────────────────────────────────────────────────────
 
@@ -133,6 +152,32 @@ function renderField(def: FieldDef, path: string, onChange?: () => void): HTMLEl
       wrap.append(
         h('fieldset', null, h('legend', null, def.label), h('div', { class: 'chips' }, ...boxes)),
         help ?? '',
+      );
+      return wrap;
+    }
+    case 'number': {
+      const input = h('input', {
+        id,
+        type: 'number',
+        min: String(def.min),
+        max: String(def.max),
+        step: String(def.step),
+        value: typeof value === 'number' ? String(value) : '',
+      });
+      input.addEventListener('input', () => {
+        const n = Number.parseFloat(input.value);
+        if (Number.isFinite(n) && n >= def.min && n <= def.max) {
+          error.textContent = '';
+          changed(n);
+        } else {
+          error.textContent = `Enter a number from ${def.min} to ${def.max}.`;
+        }
+      });
+      wrap.append(
+        h('label', { htmlFor: id }, def.unit ? `${def.label} (${def.unit})` : def.label),
+        input,
+        help ?? '',
+        error,
       );
       return wrap;
     }
@@ -339,7 +384,9 @@ function renderDocuments(section: SectionDef): HTMLElement {
       setStatus('All changes saved');
       renderSection(section);
       renderProgress();
+      importer.renderActions();
     });
+    const canImport = key === 'resume' && current && resumeKind(current.name, current.type);
     return h(
       'div',
       { class: 'doc-row card' },
@@ -359,6 +406,18 @@ function renderDocuments(section: SectionDef): HTMLElement {
       h(
         'div',
         { class: 'item-actions' },
+        canImport
+          ? h(
+              'button',
+              {
+                type: 'button',
+                class: 'secondary',
+                title: 'Fill empty profile fields from this resume',
+                on: { click: () => void importer.fromSaved() },
+              },
+              'Fill profile from it',
+            )
+          : null,
         current
           ? h(
               'button',
@@ -378,6 +437,7 @@ function renderDocuments(section: SectionDef): HTMLElement {
                     await store.saveDocuments(documents);
                     renderSection(section);
                     renderProgress();
+                    importer.renderActions();
                   },
                 },
               },
@@ -592,6 +652,7 @@ function renderSection(section: SectionDef): void {
   clear(el);
   el.append(h('h2', null, section.title));
   if (section.description) el.append(h('p', { class: 'muted' }, section.description));
+  if (section.custom === 'import') el.append(importer.el);
   if (section.custom === 'documents') el.append(renderDocuments(section));
   if (section.fields) el.append(renderFields(section.fields));
   if (section.list) el.append(renderList(section, section.list));
@@ -626,6 +687,7 @@ async function main(): Promise<void> {
   const data = await store.loadAll();
   state = { profile: data.profile, settings: data.settings };
   documents = data.documents;
+  importer.renderActions();
 
   const app = document.getElementById('app')!;
   const nav = h(

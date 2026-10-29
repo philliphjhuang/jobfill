@@ -5,6 +5,7 @@ import { env } from '../src/engine/dom';
 env.layout = false;
 
 afterEach(() => {
+  if (typeof document === 'undefined') return; // node-environment tests
   document.body.replaceChildren();
   document.querySelectorAll('.demo-popup').forEach((n) => n.remove());
 });

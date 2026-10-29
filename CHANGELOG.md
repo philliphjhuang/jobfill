@@ -6,6 +6,32 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Fill profile from resume** (PDF, DOCX, TXT), parsed entirely on-device: name, contact
+  details, location, LinkedIn/GitHub/portfolio links (including hyperlink targets), summary, work
+  history, education, skills and languages. Empty profile fields are filled immediately; fields
+  that already hold a different value are reviewed one by one with **Yes / No / Edit** (with Undo
+  and "Yes/No to all remaining"). Available from the top of the profile editor, next to the saved
+  resume, and from the popup when the profile is empty.
+- Sample resumes `demo/sample-resume.pdf` and `demo/sample-resume.docx`.
+- **Type like a person** (on by default): text is typed one character at a time with a random
+  0.1–0.9 s between characters, and a random 3–7 s pause before each new field. Both ranges and
+  the feature itself are adjustable in Settings.
+- Live progress in the page panel (field N of M, current action, time left) with a **Stop**
+  button; a stopped run finishes the field being typed and shows what is still empty. Typing
+  pauses while the tab is in the background.
+
+### Changed
+
+- Fill runs are event-driven: the service worker starts a run and relays messages instead of
+  waiting for it, so long paced runs survive Chrome's 5-minute limit per service-worker call
+  ([ADR 0005](docs/adr/0005-human-paced-typing-and-event-driven-runs.md)). The popup now starts a
+  fill and points to the page for progress and results.
+- Minimum Chrome version is now 120 (required by pdf.js).
+- First runtime dependency: `pdfjs-dist` 4.10.38, bundled into the profile editor only
+  ([ADR 0004](docs/adr/0004-local-resume-parsing-with-pdfjs.md)).
+
 ## [1.0.0] - 2026-09-28
 
 ### Added
@@ -28,11 +54,11 @@ All notable changes to this project are documented here. The format follows
 
 ## Roadmap
 
-- Parse an uploaded resume to pre-fill the profile.
+- OCR for scanned resumes; legacy `.doc` support.
 - Optional, bring-your-own-key AI drafts for free-text questions (opt-in, never automatic).
 - Multiple profiles (for example different resumes per role type).
 - Per-site learning: remember answers the user corrects after a fill.
 - Firefox and Edge packaging.
 
-[Unreleased]: https://github.com/OWNER/jobfill/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/OWNER/jobfill/releases/tag/v1.0.0
+[Unreleased]: https://github.com/philliphjhuang/jobfill/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/philliphjhuang/jobfill/releases/tag/v1.0.0

@@ -6,7 +6,7 @@
 //
 // Uses CHROME_PATH if set, otherwise the standard Chrome install location.
 import assert from 'node:assert/strict';
-import { existsSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import puppeteer from 'puppeteer-core';
 import { startDemoServer } from '../../scripts/serve-demo.mjs';
@@ -209,11 +209,21 @@ try {
   );
   const extensionId = new URL(workerTarget.url()).host;
   const worker = await workerTarget.worker();
+  // The form checks fill instantly; pacing gets its own checks below.
+  const setPacing = (pacing) =>
+    worker.evaluate((pc) => chrome.storage.local.set({ settings: { pacing: pc } }), pacing);
   await worker.evaluate(
     (p, d) => chrome.storage.local.set({ profile: p, documents: d }),
     profile,
     documents,
   );
+  await setPacing({
+    enabled: false,
+    keyMinSec: 0.1,
+    keyMaxSec: 0.9,
+    fieldMinSec: 3,
+    fieldMaxSec: 7,
+  });
   // Close the options tab opened on install.
   for (const p of await browser.pages())
     if (p.url().startsWith('chrome-extension://')) await p.close();
@@ -306,11 +316,185 @@ try {
     await page.waitForFunction(() => document.activeElement?.id === 'why', { timeout: 5000 });
   });
 
+  const panelText = (selector) =>
+    page.evaluate(
+      (sel) =>
+        document.getElementById('jobfill-host')?.shadowRoot?.querySelector(sel)?.textContent ?? '',
+      selector,
+    );
+
+  await check('Types like a person: one character at a time, pausing between fields', async () => {
+    await setPacing({
+      enabled: true,
+      keyMinSec: 0.01,
+      keyMaxSec: 0.03,
+      fieldMinSec: 0.3,
+      fieldMaxSec: 0.5,
+    });
+    await page.goto(`${base}/lever-style.html`, { waitUntil: 'load' });
+    await page.evaluate(() => {
+      window.__typed = [];
+      document
+        .querySelector('input[name="name"]')
+        .addEventListener('input', (e) => window.__typed.push(e.target.value));
+    });
+    const fab = await page.waitForSelector('pierce/.fab', { timeout: 15000 });
+    const started = Date.now();
+    await fab.click();
+    // The panel shows live progress while it types.
+    await page.waitForFunction(
+      () =>
+        /Field \d+ of \d+/.test(
+          document.getElementById('jobfill-host')?.shadowRoot?.querySelector('.run-title')
+            ?.textContent ?? '',
+        ),
+      { timeout: 15000, polling: 50 },
+    );
+    if (shots) await page.screenshot({ path: join(shots, 'paced-progress.png') });
+    await page.waitForFunction(
+      () => !!document.getElementById('jobfill-host')?.shadowRoot?.querySelector('.stats'),
+      { timeout: 120000, polling: 250 },
+    );
+    const seconds = (Date.now() - started) / 1000;
+    console.log(`    (paced fill took ${seconds.toFixed(1)}s with shortened test delays)`);
+    const typed = await page.evaluate(() => window.__typed);
+    assert.deepEqual(
+      typed,
+      Array.from('Ada Lovelace', (_, i) => 'Ada Lovelace'.slice(0, i + 1)),
+    );
+    assert.equal(
+      await page.evaluate(read.value, 'input[name="urls[GitHub]"]'),
+      'https://github.com/ada',
+    );
+    assert.equal(await page.evaluate(read.selected, 'select[name="cards[q3][field0]"]'), '3-5');
+    // ~15 fields with ≥ 0.3 s between them, plus ~150 characters.
+    assert.ok(seconds > 4, `took only ${seconds}s — were the pauses applied?`);
+  });
+
+  await check('Stop finishes the current field and reports what is left', async () => {
+    await setPacing({
+      enabled: true,
+      keyMinSec: 0.02,
+      keyMaxSec: 0.05,
+      fieldMinSec: 1.5,
+      fieldMaxSec: 2,
+    });
+    await page.goto(`${base}/generic.html`, { waitUntil: 'load' });
+    const fab = await page.waitForSelector('pierce/.fab', { timeout: 15000 });
+    await fab.click();
+    // Let two fields go by, then press Stop in the panel.
+    await page.waitForFunction(
+      () =>
+        /Field [3-9] of/.test(
+          document.getElementById('jobfill-host')?.shadowRoot?.querySelector('.run-title')
+            ?.textContent ?? '',
+        ),
+      { timeout: 30000, polling: 50 },
+    );
+    await page.evaluate(() =>
+      document.getElementById('jobfill-host').shadowRoot.querySelector('.btn.stop').click(),
+    );
+    await page.waitForFunction(
+      () => !!document.getElementById('jobfill-host')?.shadowRoot?.querySelector('.stats'),
+      { timeout: 20000, polling: 100 },
+    );
+    assert.match(await panelText('.note'), /^Stopped\./);
+    assert.equal(await page.evaluate(read.value, 'input[name="fname"]'), 'Ada');
+    assert.equal(await page.evaluate(read.value, 'input[name="lname"]'), 'Lovelace');
+    assert.equal(await page.evaluate(read.value, '#zip'), ''); // left for the user
+    if (shots) await page.screenshot({ path: join(shots, 'paced-stopped.png') });
+    await setPacing({
+      enabled: false,
+      keyMinSec: 0.1,
+      keyMaxSec: 0.9,
+      fieldMinSec: 3,
+      fieldMaxSec: 7,
+    });
+  });
+
   await check('Application log is recorded', async () => {
     const history = await worker.evaluate(
       async () => (await chrome.storage.local.get('history')).history,
     );
     assert.ok(history.length >= 4, `expected ≥4 entries, got ${history.length}`);
+  });
+
+  await check('Fill profile from a PDF resume (Yes / Edit prompts)', async () => {
+    // Existing profile: some fields match the resume, some differ, most are empty.
+    await worker.evaluate(() =>
+      chrome.storage.local.set({
+        profile: {
+          personal: { firstName: 'Jordan', email: 'old@example.com' },
+          skills: 'Go',
+          work: [
+            {
+              id: 'w-existing',
+              company: 'Lone Star Analytics',
+              title: 'Engineer',
+              location: '',
+              startDate: '',
+              endDate: '',
+              current: false,
+              description: '',
+            },
+          ],
+        },
+        documents: { resume: null, coverLetter: null },
+      }),
+    );
+    const options = await browser.newPage();
+    await options.goto(`chrome-extension://${extensionId}/options.html#import`);
+    const picker = await options.waitForSelector('#resume-import-file');
+    await picker.uploadFile(join(root, 'demo', 'sample-resume.pdf'));
+    await options.waitForSelector('dialog.import-dialog[open]', { timeout: 20000 });
+
+    const labels = await options.$$eval('.conflict .conflict-label', (els) =>
+      els.map((e) => e.textContent),
+    );
+    assert.deepEqual(labels, [
+      'Email',
+      'Skills',
+      'Work · Lone Star Analytics — Job title',
+      'Work · Lone Star Analytics — Currently work here',
+    ]);
+    if (shots) await options.screenshot({ path: join(shots, 'resume-review.png') });
+
+    // Email → Yes; job title → Edit; skills and "current" left unanswered (kept).
+    await options.click('.conflict:nth-child(1) button.yes');
+    await options.click('.conflict:nth-child(3) button.edit');
+    await options.$eval('.conflict:nth-child(3) .editor input', (el) => {
+      el.value = 'Principal Engineer';
+    });
+    await options.click('.conflict:nth-child(3) .editor button.primary');
+    if (shots) await options.screenshot({ path: join(shots, 'resume-review-answered.png') });
+    await options.click('.import-dialog footer button.primary');
+    await options.waitForSelector('.import-status.done');
+
+    await options.waitForFunction(
+      () =>
+        new Promise((resolve) =>
+          chrome.storage.local.get('profile', ({ profile }) =>
+            resolve(profile?.work?.[0]?.title === 'Principal Engineer'),
+          ),
+        ),
+      { timeout: 5000, polling: 200 },
+    );
+    const saved = await worker.evaluate(() => chrome.storage.local.get(['profile', 'documents']));
+    const p = saved.profile;
+    assert.equal(p.personal.email, 'jordan.rivera@example.com'); // Yes
+    assert.equal(p.skills, 'Go'); // not answered → kept
+    assert.equal(p.work[0].title, 'Principal Engineer'); // Edit
+    assert.equal(p.work[0].current, false); // not answered → kept
+    assert.equal(p.work[0].startDate, '2023-01'); // was empty → filled
+    assert.equal(p.personal.lastName, 'Rivera'); // was empty → filled
+    assert.equal(p.links.portfolio, 'https://jordanrivera.dev');
+    assert.equal(p.work.length, 2); // Bluebonnet Labs added
+    assert.equal(saved.documents.resume.name, 'sample-resume.pdf');
+    // The stored copy must be the whole file (pdf.js must not have consumed the bytes).
+    const original = readFileSync(join(root, 'demo', 'sample-resume.pdf'));
+    assert.equal(saved.documents.resume.size, original.length);
+    assert.equal(saved.documents.resume.data, original.toString('base64'));
+    await options.close();
   });
 
   if (shots) {

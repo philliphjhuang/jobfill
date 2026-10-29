@@ -152,6 +152,18 @@ export interface Documents {
 
 export type FloatingButtonMode = 'auto' | 'always' | 'never';
 
+/** Human-like pacing of a fill. Each delay is drawn uniformly from [min, max] seconds. */
+export interface PacingSettings {
+  /** Type one character at a time and pause before each new field. */
+  enabled: boolean;
+  /** Delay between two keystrokes. */
+  keyMinSec: number;
+  keyMaxSec: number;
+  /** Pause before moving on to the next field. */
+  fieldMinSec: number;
+  fieldMaxSec: number;
+}
+
 export interface Settings {
   floatingButton: FloatingButtonMode;
   /** Replace values that are already present on the page. */
@@ -163,6 +175,7 @@ export interface Settings {
   addMissingEntries: boolean;
   highlightFields: boolean;
   keepHistory: boolean;
+  pacing: PacingSettings;
 }
 
 export interface HistoryEntry {
