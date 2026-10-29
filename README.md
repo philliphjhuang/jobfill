@@ -19,6 +19,44 @@ Everything is stored locally in your browser. There is no account, no server and
 
 _Screenshots are captured by the end-to-end test running against the bundled demo forms._
 
+## Install
+
+No coding needed — just Chrome (or Edge).
+
+1. **Download** `jobfill-vX.Y.Z.zip` from the
+   [latest release](https://github.com/philliphjhuang/jobfill/releases/latest).
+2. **Unzip** it (Windows: right-click → **Extract All…**) into a folder you'll keep, e.g.
+   `Documents\JobFill`. Chrome runs JobFill from this folder, so don't delete it.
+3. In Chrome, go to `chrome://extensions` and turn on **Developer mode** (switch at the top
+   right).
+4. Click **Load unpacked** and select the unzipped folder (the one containing `manifest.json`).
+5. Click the puzzle-piece icon in the toolbar and **pin JobFill**.
+
+JobFill opens its profile page — click **Fill from resume** to set up your profile from your
+resume.
+
+**Edge:** same steps at `edge://extensions`.<br>
+**Updating:** extract the new zip into the _same_ folder (replace the files), then click
+**Reload** ↻ on JobFill's card in `chrome://extensions`. Your profile is kept.<br>
+**Moving the folder:** Chrome treats a new folder as a new install, so first export your profile
+(profile page → **Your data** → **Export profile**, tick _include files_) and import it afterwards.
+
+<details>
+<summary>Build from source (developers)</summary>
+
+Requires Node.js 24 LTS (or 22.22+).
+
+```bash
+git clone https://github.com/philliphjhuang/jobfill.git
+cd jobfill
+npm ci
+npm run build
+```
+
+Then do steps 3–5 above, selecting the `dist/` folder.
+
+</details>
+
 ## Features
 
 - **Set up your profile from your resume.** Upload a PDF, Word (.docx) or text resume and JobFill
@@ -56,25 +94,6 @@ _Screenshots are captured by the end-to-end test running against the bundled dem
 
 Tuned for Greenhouse, Lever, Workday, Ashby, SmartRecruiters, iCIMS, Jobvite, BambooHR,
 Workable, Taleo, SuccessFactors and more, with generic heuristics for any other careers page.
-
-## Install
-
-### From source (developer mode)
-
-```bash
-npm ci
-npm run build
-```
-
-1. Open `chrome://extensions` and enable **Developer mode**.
-2. Click **Load unpacked** and select the `dist/` folder.
-3. The profile editor opens automatically. Use **Fill from resume** at the top to start from your
-   resume, then review and complete the remaining sections.
-
-### From a release
-
-Download `jobfill-vX.Y.Z.zip` from the Releases page, unzip it and load the folder as above (or
-install from the Chrome Web Store once published).
 
 ## Usage
 
@@ -123,8 +142,8 @@ Try it safely on the bundled mock forms: `npm run demo`, then open <http://local
 | `npm run package`   | Build and zip `release/jobfill-vX.Y.Z.zip` for the Web Store. |
 | `npm run demo`      | Serve the mock application forms on port 5173.                |
 
-Requires Node.js 24 (current LTS) or 22.22+ — only for developing; people using the extension need nothing but Chrome. `test:e2e` needs Chrome installed (set `CHROME_PATH` if it is not in the
-default location).
+Requires Node.js 24 LTS (or 22.22+) — only for development; people using the extension need just
+Chrome. `test:e2e` needs Chrome installed (set `CHROME_PATH` if it is not in the default location).
 
 ### Project layout
 
