@@ -34,13 +34,13 @@ jobs:
       - run: npm run build
       - name: Upload coverage report
         if: matrix.node == 24
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage
           path: coverage/
       - name: Upload unpacked extension
         if: matrix.node == 24
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: jobfill-dist
           path: dist/
@@ -67,7 +67,7 @@ jobs:
           E2E_SCREENSHOTS: e2e-screenshots
       - name: Upload screenshots
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-screenshots
           path: e2e-screenshots/
