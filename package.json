@@ -1,6 +1,6 @@
 {
   "name": "jobfill",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "Privacy-first Chrome extension that auto-fills job applications from a locally stored profile.",
   "type": "module",
