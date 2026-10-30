@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-29
+
 ### Added
 
 - **Fill profile from resume** (PDF, DOCX, TXT), parsed entirely on-device: name, contact
@@ -63,5 +65,6 @@ All notable changes to this project are documented here. The format follows
 - Per-site learning: remember answers the user corrects after a fill.
 - Firefox and Edge packaging.
 
-[Unreleased]: https://github.com/philliphjhuang/jobfill/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/philliphjhuang/jobfill/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/philliphjhuang/jobfill/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/philliphjhuang/jobfill/releases/tag/v1.0.0
